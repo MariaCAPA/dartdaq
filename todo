@@ -1,0 +1,75 @@
+from manual pag 39
+The self-triggers of each couple of adjacent channels are then processed to output a single trigger request.
+
+The trigger
+requests are propagated to the central trigger logic where they are ORed to produce the board common trigger
+
+
+por cada pareja, puedo elegir:
+AND
+ONLY 0
+ONLY 1
+OR
+
+el resultado de cada pareja va a un OR
+
+Para la anchura del trigger puedo elegir
+- que este up[down] mientras el pulso esté sobre [o bajo] el treshold
+- que este up[down] un tiempo configurable.
+
+
+Default Conditions: by default, the FPGA is programmed so that the trigger request is the OR of two pulses of 16ns-
+width.
+
+para modificar que los trigger request vayan a un OR, puedo configurar una coincidencia:
+coincidences
+Enabling the coincidences is possible by writing at register address 0x810C:
+Bit[7:0] enable the trigger request signals to participate in the coincidence;
+Bit[23:20] set the coincidence window (T TVAW ) linearly in steps of the Trigger clock;
+Bit[26:24] set the Majority (i.e. Coincidence) level.
+The coincidence takes place when:
+Number of enabled trigger requests > Majority level
+
+Supposing bit[7:0] = 0xFF (i.e. all the 8 trigger requests are enabled) and bit[26:24] = 01 (i.e. Majority level = 1), a
+common trigger is issued whenever at least two of the enabled trigger requests are in coincidence within the
+programmed T TVAW .
+The Majority level must be smaller than the number of trigger request signals enabled via bits[7:0] mask. The default
+setting is bit[26:24] = 00 (i.e. Majority level = 0), which means the coincidence acquisition mode is disabled and the
+T TVAW is meaningless. In this case, the board common trigger is simple OR of the signals from the enabled channels pairs.
+
+NOTA: el trigger en coincidencia se produce al final de la ventana TVAW. El pretrigger tiene que tener eso en cuenta
+Si TVAW es 0, entonces tiene que haber una superposicion de los triggers, y el trigger se produce al inicio de la ventana.
+
+--- puedo usar TRG-IN como veto
+
+ver pag 42
+
+
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+-----------------------------------------------
+How to recover from a corrupted ODB
+
+    Stop your front-ends, mlogger, mhttpd, etc.
+    Remove the shared memory associated to ODB buffer. Find the shared memory segment by doing 
+
+ls -l /dev/shm
+
+then remove the segment that will be something like /dev/shm/*_test_ODB_SHM where "test" is the experiment name.
+
+    Move the old ODB files. These will be in the location given by Exptab, e.g. ~/online
+
+cd online
+mv .ODB.SHM .ODB.SHM.BAD
+
+    Restart ODB with larger size using odbedit e.g.
+
+odbedit -s 100000000
+
+    Reload the last saved ODB dump you have (see save and reload the ODB)
+
+190421: salvo db en /online/history/testDartDB.odb
+
+de todas formas, al correr el frontend carga el contenido de Equipment
