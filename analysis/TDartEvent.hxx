@@ -14,19 +14,30 @@ class TDartEvent: public TObject
       public:
       int ch;
       double charge;
+      double charge90;
+      double charge640;
       double bsl;
+      double bslEnd;
       double rms;
+      double rmsEnd;
       double high;
+      double min;
       double t0;
       double tMax;
-      void Reset() {ch=-1; charge=-1; bsl=-1; rms=-1;high=-1; t0=-1; tMax=-1;}
+      double tMin;
+      void Reset() {ch=-1; charge=-1; charge90=-1; charge640=-1; bsl=-1; bslEnd=-1; rms=-1; rmsEnd=-1; high=-1; min=-1; t0=-1; tMax=-1; tMin=-1;}
       TDartCh(){Reset();}
       virtual ~TDartCh(){Reset();}
-      TDartCh( const TDartCh &obj){ch=obj.ch; charge=obj.charge; bsl=obj.bsl; rms=obj.rms; high=obj.high; t0=obj.t0; tMax=obj.tMax;} // copy constructor
+      TDartCh( const TDartCh &obj){ch=obj.ch; charge=obj.charge; charge90=obj.charge90; charge640=obj.charge640; bsl=obj.bsl; bslEnd=obj.bslEnd; rms=obj.rms; rmsEnd=obj.rmsEnd; high=obj.high; min=obj.min; t0=obj.t0; tMax=obj.tMax; tMin=obj.tMin;} // copy constructor
 
-      const TDartCh & operator = ( const TDartCh& obj ){ch=obj.ch; charge=obj.charge; bsl=obj.bsl; rms=obj.rms; high=obj.high; t0=obj.t0; tMax=obj.tMax; return *this;} 
-      void Dump() const{std::cout << "- ch: " << ch << " charge: " << charge << " bsl: " << bsl << " rms: " << rms << " high: " << high << " t0: " << t0 << " tMax: " << tMax << std::endl;}
-      ClassDef (TDartEvent::TDartCh,1);
+      const TDartCh & operator = ( const TDartCh &obj ){ch=obj.ch; charge=obj.charge; charge90=obj.charge90; charge640=obj.charge640; bsl=obj.bsl; bslEnd=obj.bslEnd; rms=obj.rms; rmsEnd=obj.rmsEnd; high=obj.high; min=obj.min; t0=obj.t0; tMax=obj.tMax; tMin=obj.tMin; return *this;} 
+      void Dump() const
+      {
+        std::cout << "- ch: " << ch << " charge: " << charge << " charge90: " << charge90 << " charge640: " << charge640 << std::endl;
+        std::cout << " bsl: " << bsl << " bslEnd: " << bslEnd << " rms: " << rms << " rmsEnd: " << rmsEnd << std::endl;
+        std::cout << " high: " << high << " min: " << min << " t0: " << t0 << " tMax: " << tMax << " tMin: " << tMin << std::endl;
+      }
+      ClassDef (TDartEvent::TDartCh,2);
     };
    
     class TVetoCh
@@ -39,13 +50,15 @@ class TDartEvent: public TObject
       double Vhigh;
       double Vt0; 
       double VtMax;
-      void Reset() {Vch=-1; Vcharge=-1; Vbsl=-1; Vrms=-1; Vhigh=-1; Vt0=-1; VtMax=-1;}
+      double Vmin;
+      double VtMin;
+      void Reset() {Vch=-1; Vcharge=-1; Vbsl=-1; Vrms=-1; Vhigh=-1; Vt0=-1; VtMax=-1;Vmin=-1; VtMin=-1;}
       TVetoCh(){Reset();}
       virtual ~TVetoCh(){Reset();}
-      TVetoCh( const TVetoCh &obj){Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vhigh=obj.Vhigh; Vt0=obj.Vt0; VtMax=obj.VtMax; }  // copy constructor
-      const TVetoCh & operator = ( const TVetoCh& obj ) {Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vhigh=obj.Vhigh; Vt0=obj.Vt0; VtMax=obj.VtMax; return *this;}
-      void Dump() const{std::cout << "- Vch: " << Vch << " Vcharge: " << Vcharge << " Vbsl: " << Vbsl << " Vrms: " << Vrms << " Vhigh: " << Vhigh << " Vt0: " << Vt0 << " VtMax: " << VtMax << std::endl;}
-     ClassDef (TDartEvent::TVetoCh,1);
+      TVetoCh( const TVetoCh &obj){Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vhigh=obj.Vhigh; Vt0=obj.Vt0; VtMax=obj.VtMax; Vmin=obj.Vmin; VtMin = obj.VtMin;}  // copy constructor
+      const TVetoCh & operator = ( const TVetoCh& obj ) {Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vhigh=obj.Vhigh; Vt0=obj.Vt0; VtMax=obj.VtMax; Vmin=obj.Vmin; VtMin = obj.VtMin; return *this;}
+      void Dump() const{std::cout << "- Vch: " << Vch << " Vcharge: " << Vcharge << " Vbsl: " << Vbsl << " Vrms: " << Vrms << " Vhigh: " << Vhigh << " Vt0: " << Vt0 << " VtMax: " << VtMax << " Vmin: " << Vmin << " VtMin: " << VtMin <<  std::endl;}
+     ClassDef (TDartEvent::TVetoCh,2);
     };
 
     TDartEvent(){Reset();}
@@ -101,7 +114,7 @@ class TDartEvent: public TObject
 
     }
 
-  ClassDef (TDartEvent,1);
+  ClassDef (TDartEvent,2);
 };
 
 
