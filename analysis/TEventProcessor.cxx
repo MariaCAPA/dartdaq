@@ -73,8 +73,58 @@ bool TEventProcessor::IsDart(int ch)
 int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
 {
   TDartEvent::TDartCh dch;
-  GetBasicParam(channelData,dch.bsl, dch.rms, dch.high, dch.t0, dch.tMax, dch.charge);
+  GetBasicParam(channelData,dch.bsl, dch.rms, dch.high, dch.t0, dch.tMax, dch.charge, dch.min, dch.tMin);
   dch.ch=channelData.GetChannelNumber();
+
+  int nSamples = channelData.GetNSamples();
+  ////////////////////
+  // TODO CONFIGURE FROM DB
+  const int nBslSamples = 200;
+  const int polarity = -1; 
+  const int nRMS = 5;
+  const int SR=0.5; // GS/s
+  //////////////////
+  double bslEnd=0;
+  double rmsEnd=0;
+  double area90=0;
+  double area640=0;
+   
+  int samp=1;
+  for (; samp <= nBslSamples; samp++) 
+  {
+      double adc = channelData.GetADCSample(nSamples-samp);
+      bslEnd += adc;
+      rmsEnd += adc*adc;
+  }
+  bslEnd /= (float)nBslSamples;
+  rmsEnd /= (float)nBslSamples;
+  rmsEnd -= bslEnd*bslEnd;
+  rmsEnd = sqrt(rmsEnd);
+
+  // integrate from t0
+  samp=dch.t0;
+  // 90 ns => 90*SR points
+  int max90 = samp + 90*SR;
+  double test;
+  for (; samp < max90 ; samp++) 
+  {
+    test = polarity*(channelData.GetADCSample(samp) - dch.bsl);
+    area90 += test;
+    area640 += test;
+  }
+  int max640 = samp + (640-90)*SR;
+  for (; samp < max640 ; samp++) 
+  {
+    test = polarity*(channelData.GetADCSample(samp) - dch.bsl);
+    area640 += test;
+  }
+
+  dch.bslEnd = bslEnd;
+  dch.rmsEnd = rmsEnd;
+  dch.charge90 = area90;
+  dch.charge640 = area640;
+
+
   fDartEvent->dartChannel.push_back(dch);
   return 1;
 }
@@ -83,12 +133,12 @@ int TEventProcessor::AnalyzeVetoChannel(TV1730RawChannel& channelData)
 {
   TDartEvent::TVetoCh vch;
   vch.Vch=channelData.GetChannelNumber();
-  GetBasicParam(channelData,vch.Vbsl, vch.Vrms, vch.Vhigh, vch.Vt0, vch.VtMax, vch.Vcharge);
-  if (vch.Vt0>0) fDartEvent->vetoChannel.push_back(vch); // only it pass software threshold
+  GetBasicParam(channelData,vch.Vbsl, vch.Vrms, vch.Vhigh, vch.Vt0, vch.VtMax, vch.Vcharge, vch.Vmin, vch.VtMin);
+  if (vch.Vt0>0) fDartEvent->vetoChannel.push_back(vch); // only when it pass software threshold
   return 1;
 }
 
-int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, double &rms, double &high, double & t0, double &tMax, double &area)
+int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, double &rms, double &high, double & t0, double &tMax, double &area, double &min, double &tMin)
 {
   int nSamples = channelData.GetNSamples();
   ////////////////////
@@ -105,6 +155,8 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   t0=0;
   tMax=0;
   area=0;
+  min=0; 
+  tMin=0;
    
   int samp=0;
   for (; samp < nBslSamples; samp++) 
@@ -119,7 +171,7 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   rms = sqrt(rms);
 
   // look for trigger
-  int test = bsl + polarity*nRMS*rms;
+  double test = bsl + polarity*nRMS*rms;
   while (samp<nSamples) 
   {
     if (polarity*channelData.GetADCSample(samp) > polarity*test) break;
@@ -129,10 +181,13 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   if (samp==nSamples) return 0; // no trigger
   t0=samp;
   // integrate from t0
+  high= polarity*(channelData.GetADCSample(samp)  - bsl);
+  min= polarity*(channelData.GetADCSample(samp)  - bsl);
   for (; samp < nSamples ; samp++) 
   {
     test = polarity*(channelData.GetADCSample(samp)  - bsl);
     if (test>high) {high=test; tMax = samp;}
+    if (test<min) {min=test; tMin = samp;}
     area += test;
   }
 
