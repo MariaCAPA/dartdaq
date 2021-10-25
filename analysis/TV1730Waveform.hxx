@@ -14,6 +14,7 @@ public:
   virtual ~TV1730Waveform(){};
 
   void UpdateHistograms(TDataContainer& dataContainer) override;
+  void AddHistogramsChannel(TDataContainer &dataContainer, int ch);
 
   /// Getters/setters
   int GetNsecsPerSample() { return nanosecsPerSample; }

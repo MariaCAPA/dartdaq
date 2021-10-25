@@ -145,6 +145,46 @@ std::cout << "not scope data format " << std::endl;
   }
 }
 
+void TV1730Waveform::AddHistogramsChannel(TDataContainer &dataContainer, int ch) 
+{
+  char name[100];
+  sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
+  TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
+
+  // if there are no channels, return 
+  if (!V1730 || V1730->GetNChannels()==0) 
+  {
+    printf("Didn't see bank %s or there are no channels \n", name);
+    return ;
+  }
+
+  // if channels or number of samples have changed, force new histograms
+  TV1730RawChannel& channelData = V1730->GetChannelData(0);
+  if (fNChannels != V1730->GetNChannels() || fNSamples!=channelData.GetNSamples() )
+  {
+    DeleteHistograms();
+    fNSamples = channelData.GetNSamples();
+    std::cout << "V1730Waveforms: updating n channels " << V1730->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
+    fChannels.clear(); 
+    fNChannels = V1730->GetNChannels();
+    for (int i=0; i<fNChannels; i++) fChannels.push_back(V1730->GetChannelData(i).GetChannelNumber());
+    CreateHistograms();
+  }
+
+  // look for channel index
+  int index=0;
+  for (; index < fNChannels; index++) if (fChannels[index]==ch) break;
+  if (index==fNChannels) { std::cout << "Channel " << ch << " not found! " << std::endl; return;}
+
+  // add channel
+  channelData = V1730->GetChannelData(index);
+  for (int samp = 0; samp < channelData.GetNSamples(); samp++) 
+  {
+    double adc = channelData.GetADCSample(samp);
+    GetHistogram(index)->AddBinContent(samp + 1, adc);
+  }
+}
+
 
 void TV1730Waveform::Reset() 
 {
