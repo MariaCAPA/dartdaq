@@ -82,7 +82,7 @@ int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
   const int nBslSamples = 200;
   const int polarity = -1; 
   const int nRMS = 5;
-  const int SR=0.5; // GS/s
+  const double SR=0.5; // GS/s
   //////////////////
   double bslEnd=0;
   double rmsEnd=0;
@@ -123,6 +123,8 @@ int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
   dch.rmsEnd = rmsEnd;
   dch.charge90 = area90;
   dch.charge640 = area640;
+
+//std::cout << " area90 " << area90 << " area640 " << area640 << std::endl;
 
 
   fDartEvent->dartChannel.push_back(dch);
