@@ -1,0 +1,116 @@
+#include "TDartUtils.hxx"
+#include "TV1730Waveform.hxx"
+#include <iostream>
+#include "midasio.h"
+
+
+#include <TChain.h>
+#include <TMidasEvent.h>
+#include <TDataContainer.hxx>
+#include <THistogramArrayBase.h>
+#include <TRootanaDisplay.hxx>
+
+#include <stdio.h>
+
+#include "TFancyHistogramCanvas.hxx"
+#include "TTree.h"
+
+
+
+std::string fileName;
+TMReaderInterface* reader = 0;
+int initialized = 0;
+
+TChain * readDartRun(int run, std::string baseName)
+{
+  TChain * t = new TChain("td");
+  int maxPartial = 99;
+  for (int parcial=0; parcial<maxPartial; parcial++)
+  {
+    std::string filename = baseName + Form("_%06d_%04d.root", run, parcial);
+    std::cout << " adding " << filename.c_str() ;
+    if (access(filename.c_str(), F_OK)==-1) { std::cout << " .. not found. Stop" << std::endl; break;}
+    t->Add(filename.c_str(), -1);
+    std::cout << std::endl;
+  }
+
+  t->SetEstimate(t->GetEntries());
+  std::cout << " to visualize and event do TDartEvent * ev; t->SetBranchAddress(\"DartEvent\",&ev); t->GetEntry(i); ev->Dump(); " << std::endl;
+  return t;
+}
+
+TV1730Waveform *GetWaveform(std::string fname, int evNo)
+{
+  if (!initialized)
+  {
+    TDartVisu::CreateSingleton<TDartVisu>();
+    //TDartVisu::Get().ExecuteLoop(0,0);
+    TDartVisu::Get().InitializeRAD();
+    initialized = 1;
+  }
+
+  TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  //manager.AddHistogram(wf);
+  //display.AddSingleCanvas(wf->CreateCanvas(), wf->GetTabName());
+
+
+/*
+  if (!reader)  
+  {
+    fileName = fname;
+    reader = TMNewReader(fname.c_str());
+  }
+
+  else if (fileName!=fname)
+  {
+    delete reader;
+    reader = TMNewReader(fname.c_str());
+    fileName = fname;
+  }
+*/
+
+  if (reader) delete reader; 
+  reader = TMNewReader(fname.c_str());
+  if (reader->fError) 
+  {
+    printf("Cannot open input file \"%s\"\n",fname.c_str());
+    delete reader;
+    return 0;
+  }
+
+  TMidasEvent event;
+  while (TMReadEvent(reader, &event))
+  {
+    if ((event.GetEventId() & 0xFFFF) == 0x8000) continue; // begin of run
+    if (event.GetSerialNumber()==(unsigned int)evNo)
+    {
+
+
+      // Set the bank list for midas event.
+      event.SetBankList();
+
+      event.Print();
+
+      TDataContainer dataContainer;
+
+      // Set the midas event pointer in the physics event.
+      dataContainer.SetMidasEventPointer(event);
+
+      //wf->UpdateHistograms(dataContainer);
+      visu.UpdateHistograms(dataContainer);
+      //visu.ProcessMidasEvent(dataContainer);
+      visu.PlotCanvas(dataContainer);
+
+
+      //manager.UpdateTransientPlots(dataContainer);
+ 
+      return visu.fWf;
+    }
+  }
+  return 0;
+}
+
+
+
+
+

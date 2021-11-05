@@ -80,8 +80,7 @@ int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
   ////////////////////
   // TODO CONFIGURE FROM DB
   const int nBslSamples = 200;
-  const int polarity = -1; 
-  const int nRMS = 5;
+  const double polarity = 1.; 
   const double SR=0.5; // GS/s
   //////////////////
   double bslEnd=0;
@@ -146,7 +145,7 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   ////////////////////
   // TODO CONFIGURE FROM DB
   const int nBslSamples = 200;
-  const int polarity = -1; 
+  const double polarity = 1.; 
   const int nRMS = 5;
   //const int thr = 8; // in ADC samples
   //////////////////
@@ -184,7 +183,9 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   t0=samp;
   // integrate from t0
   high= polarity*(channelData.GetADCSample(samp)  - bsl);
+  tMax=samp;
   min= polarity*(channelData.GetADCSample(samp)  - bsl);
+  tMin=samp;
   for (; samp < nSamples ; samp++) 
   {
     test = polarity*(channelData.GetADCSample(samp)  - bsl);

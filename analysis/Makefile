@@ -45,7 +45,7 @@ endif # ROOTSYS
 
 ifdef MIDASSYS
 
-MIDASLIBS = $(MIDASSYS)/lib/libmidas.a -lutil -lrt
+MIDASLIBS = $(MIDASSYS)/lib/libmidas.a -lutil -lrt 
 CXXFLAGS += -DHAVE_MIDAS -DOS_LINUX -Dextname -I$(MIDASSYS)/include
 
 UNAME := $(shell uname)
@@ -63,33 +63,36 @@ OBJS += TV1730RawData.o
 OBJS += TV1730Waveform.o 
 OBJS += TDartAnaManager.o 
 OBJS += TEventProcessor.o 
-OBJS += TDartEventDict.o 
+#OBJS += TDartEventDict.o 
 OBJS += TChannelHistograms.o 
+OBJS += TDartReadRun.o 
+OBJS += TDartVisu.o 
 
 all: $(OBJS) wfViewer.exe midas2root.exe wfAverage.exe dartlib.so
 
 lib: dartlib.so
 
-wfViewer.exe: wfViewer.cxx $(OBJS) 
+wfViewer.exe: wfViewer.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
-wfAverage.exe: wfAverage.cxx $(OBJS) 
+wfAverage.exe: wfAverage.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
-midas2root.exe: midas2root.cxx $(OBJS) 
+midas2root.exe: midas2root.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 %Dict.o: %Dict.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c -I. $<
 
-%Dict.cxx: TDartUtils.hxx
-	rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx TDartUtils.hxx $*_LinkDef.h
+%Dict.cxx: TV1730Waveform.hxx TDartAnaManager.hxx  TDartReadRun.hxx TDartVisu.hxx
+	rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx $^ $*_LinkDef.h
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) -c $<
 
-dartlib.so: TDartEventDict.cxx TDartEvent.hxx TDartUtils.cxx
-	$(CXX) $(CXXFLAGS) -shared -o $@ $(ROOTGLIBS) $^
+#dartlib.so: TDartEventDict.cxx TDartEvent.hxx 
+dartlib.so: *.cxx *.hxx
+	$(CXX) $(CXXFLAGS) -shared -o $@  TDartEventDict.cxx $(OBJS) $(LIBS) $(ROOTGLIBS) 
 	#$(CXX) $(CXXFLAGS) -shared -o $@  $^
 
 

@@ -1,0 +1,155 @@
+#ifndef __DART_UTILS__H__
+#define __DART_UTILS__H__
+
+#include <string>
+#include <vector>
+class TChain;
+class TH1;
+class TV1730Waveform;
+
+TChain * readDartRun(int run, std::string baseName="output");
+TV1730Waveform *GetWaveform(std::string fname, int evNo);
+
+
+#include "TDartUtils.hxx"
+#include "TV1730Waveform.hxx"
+#include <iostream>
+#include "midasio.h"
+
+
+#include <TChain.h>
+#include <TMidasEvent.h>
+#include <TDataContainer.hxx>
+#include <THistogramArrayBase.h>
+#include <TRootanaDisplay.hxx>
+
+#include <stdio.h>
+
+#include "TFancyHistogramCanvas.hxx"
+#include "TTree.h"
+
+
+/////////////////////// EVENT DISPLAY
+#include "TDartAnaManager.hxx"
+
+class TDartWf: public TRootanaDisplay {
+
+public:
+
+  TTree * fTree;
+  // An analysis manager.  Define and fill histograms in
+  // analysis manager.
+  TDartAnaManager *anaManager;
+
+  TDartWf() {
+    SetOutputFilename("v1730wfdisplay");
+    DisableRootOutput(true);
+    anaManager = new TDartAnaManager();
+  }
+
+  void AddAllCanvases() {
+    // Set up tabbed canvases
+
+    // Set up all the listed canvases from the AnaManager list of THistogramArrayBases
+    std::vector<THistogramArrayBase*> histos = anaManager->GetHistograms();
+
+    for (unsigned int i = 0; i < histos.size(); i++) {
+      TCanvasHandleBase* canvas = histos[i]->CreateCanvas();
+
+      if (canvas) {
+        AddSingleCanvas(canvas, histos[i]->GetTabName());
+      }
+    }
+
+    SetDisplayName("V1730 Display");
+  }
+
+  virtual ~TDartWf() {};
+
+  void BeginRun(int transition,int run,int time) 
+  {
+    anaManager->BeginRun(transition, run, time, GetODB());
+    fTree = new TTree("td",Form("MIDAS data run %d",run));
+    TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
+    fTree->Branch("DartEvent",dev);
+
+  }
+
+  void EndRun(int transition,int run,int time) {
+    anaManager->EndRun(transition, run, time);
+  }
+
+  void ResetHistograms(){}
+
+  void UpdateHistograms(TDataContainer& dataContainer){
+    // Update the cumulative histograms here
+    anaManager->ProcessMidasEvent(dataContainer);
+    fTree->Fill();
+  }
+
+  void PlotCanvas(TDataContainer& dataContainer){
+    // Update the transient (per-event) histograms here.
+    // saves CPU to not update them always when not being used.
+    anaManager->UpdateTransientPlots(dataContainer);
+  }
+};
+
+
+
+
+
+class TDartVisu: public TRootanaDisplay {
+
+public:
+
+  TTree * fTree;
+  // An analysis manager.  Define and fill histograms in
+  // analysis manager.
+  TV1730Waveform* fWf;
+
+  TDartVisu() 
+  {
+    //SetOutputFilename("v1730wfdisplay");
+   // DisableRootOutput(true);
+   fWf = new TV1730Waveform();
+  }
+
+  void AddAllCanvases() 
+  {
+    AddSingleCanvas("WF");
+  }
+
+  virtual ~TDartVisu() {};
+
+  void ResetHistograms(){}
+
+  void UpdateHistograms(TDataContainer& dataContainer)
+  {
+    fWf->UpdateHistograms(dataContainer);
+  }
+
+
+  void PlotCanvas(TDataContainer& dataContainer)
+  {
+    if(GetDisplayWindow()->GetCurrentTabName().compare("WF") == 0)
+    {
+      TCanvas* c1 = GetDisplayWindow()->GetCanvas("WF");
+      
+      c1->Clear();
+      c1->Divide(2);
+      c1->cd(1);
+      fWf->GetHistogram(0)->Draw();
+      c1->cd(2);
+      fWf->GetHistogram(1)->Draw();
+      c1->Modified();
+      c1->Update();
+    }
+
+  }
+};
+
+
+
+
+#endif
+
