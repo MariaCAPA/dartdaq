@@ -26,8 +26,6 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo)
 
   // DUmp event
   fTree->GetEntry(evNo);
-  fCurrentEv->Dump();
-  visu.fCurrentEv = fCurrentEv;
 
   // look for partial and open it
   int partial = fTree->GetTreeNumber();
@@ -39,6 +37,10 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo)
     delete fReader;
     return 0;
   }
+
+  std::cout << "Partial: " << partial << std::endl;
+  fCurrentEv->Dump();
+  visu.fCurrentEv = fCurrentEv;
 
   TMidasEvent event;
   while (TMReadEvent(fReader, &event))
