@@ -27,6 +27,8 @@ public:
   void ResetHistograms(){}
   void UpdateHistograms(TDataContainer& dataContainer);
   void PlotCanvas(TDataContainer& dataContainer);
+  void PlotCanvas(TV1730Waveform * wf);
+
 };
 
 #endif

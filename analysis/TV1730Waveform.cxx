@@ -12,9 +12,21 @@ const int VMEBUS_BOARDNO = 0;
 /// Reset the histograms for this canvas
 TV1730Waveform::TV1730Waveform() 
 {
+  fName = "V1730";
+  Initialize();
+}
+
+TV1730Waveform::TV1730Waveform(std::string name)
+{
+  fName = name;
+  Initialize();
+}
+
+void TV1730Waveform::Initialize()
+{
   fCanvas = NULL;
 
-  SetTabName("V1730");
+  SetTabName(fName.c_str());
   SetSubTabName("Waveforms");
   SetUpdateOnlyWhenPlotted(false); // So visible on web
 
@@ -41,7 +53,7 @@ void TV1730Waveform::DeleteHistograms()
   for (int i = 0; i < fNChannels; i++) 
   { // loop over channels
     char tname[100];
-    sprintf(tname, "V1730_%i", fChannels[i]);
+    sprintf(tname, "%s_%i", fName.c_str(), fChannels[i]);
     TH1D *tmp = (TH1D*) gDirectory->Get(tname);
     delete tmp;
   }
@@ -55,11 +67,14 @@ void TV1730Waveform::CreateHistograms()
   if (size() != 0) 
   {
     char tname[100];
-    sprintf(tname, "V1730_%i", fChannels[0]);
+    sprintf(tname, "%s_%i", fName.c_str(), fChannels[0]);
 
     TH1D *tmp = (TH1D*) gDirectory->Get(tname);
     if (tmp)
+    {
+      std::cout << " found histo " << fName.c_str() << "_"  << fChannels[0] << " do not create it " << std::endl;
       return;
+    }
   }
 
   int WFLength = fNSamples * nanosecsPerSample; // Need a better way of detecting this...
@@ -72,14 +87,15 @@ void TV1730Waveform::CreateHistograms()
 
     char name[100];
     char title[100];
-    sprintf(name, "V1730_%i", fChannels[i]);
+    sprintf(name, "%s_%i", fName.c_str(), fChannels[i]);
     TH1D *otmp = (TH1D*) gDirectory->Get(name);
     if (otmp) 
     {
       delete otmp;
     }
 
-    sprintf(title, "V1730 Waveform for channel=%i", fChannels[i]);
+    sprintf(title, "%s Waveform for channel=%i", fName.c_str(), fChannels[i]);
+    //std::cout << " create v1730 for channel " << fChannels[i] << " with " << fNSamples << std::endl;
 
     TH1D *tmp = new TH1D(name, title, fNSamples, 0, WFLength);
     tmp->SetXTitle("ns");
@@ -200,3 +216,35 @@ void TV1730Waveform::Reset()
     GetHistogram(index)->Reset();
   }
 }
+
+void TV1730Waveform::AddWaveform(TV1730Waveform* wf)
+{
+
+  // if channels or number of samples have changed, force new histograms
+  if (fNChannels != wf->GetNChannels() || fNSamples!=wf->GetNSamples() )
+  {
+    DeleteHistograms();
+    fNSamples = wf->GetNSamples();
+    std::cout << "V1730Waveforms: updating n channels " << wf->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
+    fChannels.clear(); 
+    fNChannels = wf->GetNChannels();
+    for (int i=0; i<fNChannels; i++) fChannels.push_back(wf->GetChannelNumber(i));
+ 
+    CreateHistograms();
+
+  }
+
+  // loop over channels
+  for (int index = 0; index < fNChannels; index++) 
+  {
+   
+    TH1 * h = wf->GetHistogram(index);
+if (!h || !GetHistogram(index) ) {std::cout << " histo not found!! " << std::endl; return ;}
+    for (int samp = 1; samp <= fNSamples; samp++) 
+    {
+      double adc = h->GetBinContent(samp);
+      GetHistogram(index)->AddBinContent(samp ,adc);
+    }
+  }
+}
+

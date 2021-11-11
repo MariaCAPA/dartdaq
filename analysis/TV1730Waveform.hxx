@@ -11,14 +11,21 @@
 class TV1730Waveform : public THistogramArrayBase {
 public:
   TV1730Waveform();
+  TV1730Waveform(std::string name);
   virtual ~TV1730Waveform(){};
 
+  void Initialize();
   void UpdateHistograms(TDataContainer& dataContainer) override;
   void AddHistogramsChannel(TDataContainer &dataContainer, int ch);
+  void AddWaveform(TV1730Waveform* wf);
 
   /// Getters/setters
   int GetNsecsPerSample() { return nanosecsPerSample; }
   void SetNanosecsPerSample(int nsecsPerSample) { this->nanosecsPerSample = nsecsPerSample; }
+ 
+  int GetNChannels() {return fNChannels;}
+  int GetChannelNumber(int index) {if ((unsigned int)index<fChannels.size()) return fChannels[index]; return -1;}
+  int GetNSamples() {return fNSamples;}
 
   // Reset the histograms; needed before we re-fill each histo.
   void Reset();
@@ -39,6 +46,7 @@ private:
   int fNChannels;
   std::vector<int> fChannels;
   TFancyHistogramCanvas* fCanvas;
+  std::string fName;
 };
 
 
