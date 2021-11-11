@@ -65,3 +65,20 @@ void TDartVisu::PlotCanvas(TDataContainer& dataContainer)
     c1->Update();
   }
 }
+
+void TDartVisu::PlotCanvas(TV1730Waveform * wf)
+{
+  if(GetDisplayWindow()->GetCurrentTabName().compare("WF") == 0)
+  {
+    TCanvas* c1 = GetDisplayWindow()->GetCanvas("WF");
+    c1->Clear();
+    c1->Divide(1,2);
+    for (int i=0; i<2; i++)
+    {
+      c1->cd(i+1);
+      wf->GetHistogram(i)->Draw();
+    }
+    c1->Modified();
+    c1->Update();
+  }
+}

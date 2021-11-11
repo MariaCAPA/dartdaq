@@ -22,8 +22,9 @@ public:
 
   TDartReadRun(int run, std::string rootBasename="output", std::string dataBaseName="/storage/online/run");
   virtual ~TDartReadRun() {};
-  TV1730Waveform *GetWaveform(int evNo);
-  TV1730Waveform *GetWaveformFromSelectedEvents(int index);
+  TV1730Waveform *GetWaveform(int evNo, bool draw=true, bool dump=true);
+  TV1730Waveform *GetWaveformFromSelectedEvents(int index, bool draw=true, bool dump=true);
+  TV1730Waveform *GetAverageFromSelectedEvents(bool draw=true, bool dump=false);
   int SetSelection (std::string);
 
 

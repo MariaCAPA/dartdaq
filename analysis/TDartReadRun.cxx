@@ -16,7 +16,7 @@
 #include "TTree.h"
 #include "TDartVisu.hxx"
 
-TV1730Waveform *TDartReadRun::GetWaveform(int evNo)
+TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
 {
   TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
   //manager.AddHistogram(wf);
@@ -26,7 +26,7 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo)
 
   // DUmp event
   fTree->GetEntry(evNo);
-  fCurrentEv->Dump();
+  if(dump) fCurrentEv->Dump();
   visu.fCurrentEv = fCurrentEv;
 
   // look for partial and open it
@@ -53,7 +53,7 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo)
       dataContainer.SetMidasEventPointer(event);
       visu.UpdateHistograms(dataContainer);
       //visu.ProcessMidasEvent(dataContainer);
-      visu.PlotCanvas(dataContainer);
+      if (draw) visu.PlotCanvas(dataContainer);
       //manager.UpdateTransientPlots(dataContainer);
       return visu.fWf;
     }
@@ -87,14 +87,16 @@ TDartReadRun::TDartReadRun(int run, std::string rootBaseName, std::string dataBa
   fTree->SetBranchAddress("DartEvent",&fCurrentEv);
 }
 
-TV1730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index)
+TV1730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index, bool draw, bool dump)
 {
   if ((unsigned int)index<fSelectedEvents.size())
-  return GetWaveform(fSelectedEvents[index]);
+  return GetWaveform(fSelectedEvents[index], draw, dump);
   
   return 0;
 
 }
+
+
 int TDartReadRun::SetSelection (std::string cut)
 {
   fSelectedEvents.clear();
@@ -104,3 +106,61 @@ int TDartReadRun::SetSelection (std::string cut)
   return nsel;
 }
 
+TV1730Waveform *TDartReadRun::GetAverageFromSelectedEvents(bool draw, bool dump)
+{
+  TV1730Waveform * average = new TV1730Waveform("average");
+
+  TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  TMidasEvent event;
+
+  if (fReader) delete fReader; 
+  int prevPartial = -1;
+  int partial = 0;
+  int evNo;
+  bool found=0;
+
+  for (unsigned int index=0; index<fSelectedEvents.size(); index++)
+  {
+if (index%100==0) std::cout << " processed " << index << " events " << std::endl;
+
+   found = 0;
+    evNo = fSelectedEvents[index];
+    fTree->GetEntry(evNo);
+    // look for partial
+    partial = fTree->GetTreeNumber();
+    // if it has changed, open new file 
+    if (partial!=prevPartial)
+    {
+      std::string filename = fDataBaseName + Form("%05d_%02d.mid.lz4", fRun, partial);
+      fReader = TMNewReader(filename.c_str());
+      if (fReader->fError) 
+      {
+        printf("Cannot open input file \"%s\"\n",filename.c_str());
+        delete fReader;
+        return 0;
+      }
+      prevPartial=partial;
+    }
+    while (!found && TMReadEvent(fReader, &event))
+    {
+      if ((event.GetEventId() & 0xFFFF) == 0x8000) continue; // begin of run
+      if (event.GetSerialNumber()==(unsigned int)evNo)
+      {
+        event.SetBankList();
+        TDataContainer dataContainer;
+        // Set the midas event pointer in the physics event.
+        dataContainer.SetMidasEventPointer(event);
+        visu.UpdateHistograms(dataContainer);
+        average->AddWaveform(visu.fWf);
+        found=1;
+      }
+    } // end while event not found
+
+  } // end  selected events loop
+  if (draw)
+  {
+    visu.PlotCanvas(average);
+  }
+  return average;
+   
+}
