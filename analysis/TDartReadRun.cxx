@@ -40,6 +40,8 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
     return 0;
   }
 
+  std::cout << "Partial: " << partial << std::endl;
+
   TMidasEvent event;
   while (TMReadEvent(fReader, &event))
   {
@@ -73,7 +75,7 @@ TDartReadRun::TDartReadRun(int run, std::string rootBaseName, std::string dataBa
   fRun = run;
   fTree = new TChain("td");
   fReader=0;
-  int maxPartial = 99;
+  int maxPartial = 9999;
   for (int parcial=0; parcial<maxPartial; parcial++)
   {
     std::string filename = rootBaseName + Form("_%06d_%04d.root", run, parcial);
