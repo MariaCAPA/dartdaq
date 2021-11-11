@@ -46,13 +46,13 @@ void TDartVisu::PlotCanvas(TDataContainer& dataContainer)
       double t0 = fWf->GetHistogram(i)->GetBinCenter(fCurrentEv->dartChannel[i].t0);
       double tMax = fWf->GetHistogram(i)->GetBinCenter(fCurrentEv->dartChannel[i].tMax);
       double tMin = fWf->GetHistogram(i)->GetBinCenter(fCurrentEv->dartChannel[i].tMin);
-      TLine * l=new TLine(t0, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].min, t0, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].high);
+      TLine * l=new TLine(t0, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].min, t0, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].max);
       l->SetLineColor(kGreen); l->SetLineWidth(3); l->Draw();
       // tmax
-      l=new TLine(tMax, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].min, tMax, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].high);
+      l=new TLine(tMax, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].min, tMax, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].max);
       l->SetLineColor(kRed); l->Draw();
       // tmin
-      l=new TLine(tMin, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].min, tMin, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].high);
+      l=new TLine(tMin, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].min, tMin, fCurrentEv->dartChannel[i].bsl+fCurrentEv->dartChannel[i].max);
       l->SetLineColor(kYellow); l->Draw();
       // bsl
       l=new TLine(fWf->GetHistogram(i)->GetBinCenter(1), fCurrentEv->dartChannel[i].bsl, fWf->GetHistogram(i)->GetBinCenter(fWf->GetHistogram(i)->GetNbinsX()-1), fCurrentEv->dartChannel[i].bsl);
