@@ -460,6 +460,20 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BUFFER_ORGANIZATION, &lstatus);
   std::cout << " buffer organization . Number of buffers: " << pow(2,lstatus)  << std::endl;
 
+  // MARIA 150222
+  uint32_t boardCfg;
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BOARD_CONFIG, &boardCfg);
+  std::cout << " board config: " << boardCfg << std::endl;
+  // read channel trigger conf
+  uint32_t valConf;
+  uint32_t width;
+  for(size_t i=0;i<BoardInfo.Channels/2;++i)
+  {
+    ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_CHANNEL_TRIGGER_CONF  + (2*i<<8), &valConf);
+    ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_PULSE_WIDTH  + (2*i<<8), &width);
+    std::cout << " channels pair " << i << " channel_trigger_conf: " << valConf << " widht: " << width << " (x8 to obntain ns ) "  << std::endl;
+  }
+
   // ARM ACQUISITON
   CAEN_DGTZ_ClearData(VMEhandle);
   CAEN_DGTZ_SWStartAcquisition(VMEhandle);
@@ -795,8 +809,11 @@ int configure_trigger()
       if(!strcmp(v1730_settings.ch2_logic[i],"ONLY1")) { valConf = 2; request |= (1<<i); }
       if(!strcmp(v1730_settings.ch2_logic[i],"OR")) { valConf = 3; request |= (1<<i); }
       // check programmable window
-      if (v1730_settings.triggerWidthNs[i]==0) valConf |=4; // rise bit 2
-      else width =  v1730_settings.triggerWidthNs[i]/CLOCK2NS;
+      //if (v1730_settings.triggerWidthNs[i]==0) valConf |=4; // rise bit 2
+      //else width =  v1730_settings.triggerWidthNs[i]/CLOCK2NS;
+      // MARIA 160222 TEST!!
+      valConf |=4; // rise bit 2
+      width =  v1730_settings.triggerWidthNs[i]/CLOCK2NS;
       if (width>255) width = 255; // codified in 1 Byte
     }
     ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_CHANNEL_TRIGGER_CONF  + (2*i<<8), valConf);
