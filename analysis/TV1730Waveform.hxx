@@ -18,6 +18,7 @@ public:
   void UpdateHistograms(TDataContainer& dataContainer) override;
   void AddHistogramsChannel(TDataContainer &dataContainer, int ch);
   void AddWaveform(TV1730Waveform* wf);
+  void NormalizeWaveform(TV1730Waveform* wf, int Nev);
 
   /// Getters/setters
   int GetNsecsPerSample() { return nanosecsPerSample; }

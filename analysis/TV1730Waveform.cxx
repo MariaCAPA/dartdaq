@@ -248,3 +248,34 @@ if (!h || !GetHistogram(index) ) {std::cout << " histo not found!! " << std::end
   }
 }
 
+
+
+void TV1730Waveform::NormalizeWaveform(TV1730Waveform* wf, int nev)
+{
+
+  // if channels or number of samples have changed, force new histograms
+  if (fNChannels != wf->GetNChannels() || fNSamples!=wf->GetNSamples() )
+  {
+    DeleteHistograms();
+    fNSamples = wf->GetNSamples();
+    std::cout << "V1730Waveforms: normalizing n channels " << wf->GetNChannels() << std::endl;
+    //std::cout << "V1730Waveforms: updating n channels " << wf->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
+    fChannels.clear();
+    fNChannels = wf->GetNChannels();
+    for (int i=0; i<fNChannels; i++) fChannels.push_back(wf->GetChannelNumber(i));
+ 
+    CreateHistograms();
+
+  }
+
+  // loop over channels
+  for (int index = 0; index < fNChannels; index++)
+  {
+
+    TH1 * h = wf->GetHistogram(index);
+if (!h || !GetHistogram(index) ) {std::cout << " histo not found!! " << std::endl; return ;}
+
+    h->Scale(1./nev);  
+  }
+}
+

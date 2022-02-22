@@ -116,11 +116,11 @@ void THistoHigh::UpdateHistograms(TDataContainer& dataContainer)
 
   for(unsigned int i = 0; i < dev->dartChannel.size(); i++)
   {
-    GetHistogram(dev->dartChannel[i].ch)->Fill(dev->dartChannel[i].high);
+    GetHistogram(dev->dartChannel[i].ch)->Fill(dev->dartChannel[i].max);
   }
   for(unsigned int i = 0; i < dev->vetoChannel.size(); i++)
   {
-    GetHistogram(dev->vetoChannel[i].Vch)->Fill(dev->vetoChannel[i].Vhigh);
+    GetHistogram(dev->vetoChannel[i].Vch)->Fill(dev->vetoChannel[i].Vmax);
   }
 }
 
