@@ -29,10 +29,11 @@ private:
   bool IsDart(int ch);
   int AnalyzeDartChannel(TV1730RawChannel& channelData);
   int AnalyzeVetoChannel(TV1730RawChannel& channelData);
-  int GetBasicParam(TV1730RawChannel& channelData, double &bsl, double &rms, double &high, double & t0, double &tMax, double &area, double &min, double &tMin);
+  int GetBasicParam(TV1730RawChannel& channelData, double &bsl, double &bmax, double &bmaxp, double &bmin, double &bminp, double &bimax, double &rms, double &max, double & t0, double &tMax, double &area, double &min, double &tMin);
 
   TDartEvent *fDartEvent;
   int fRun;
+  // ...
 
   // hidden private constructor
   TEventProcessor() {fDartEvent=new TDartEvent();}

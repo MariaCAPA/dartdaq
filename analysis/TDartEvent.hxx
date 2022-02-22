@@ -17,25 +17,31 @@ class TDartEvent: public TObject
       double charge90;
       double charge640;
       double bsl;
+      double bmax;
+      double bmin;
+      double bmaxp;
+      double bminp;
+      double bimax;
       double bslEnd;
+      double bmaxEnd;
       double rms;
       double rmsEnd;
-      double high;
+      double max;
       double min;
       double t0;
       double tMax;
       double tMin;
-      void Reset() {ch=-1; charge=-1; charge90=-1; charge640=-1; bsl=-1; bslEnd=-1; rms=-1; rmsEnd=-1; high=-1; min=-1; t0=-1; tMax=-1; tMin=-1;}
+      void Reset() {ch=-1; charge=-1; charge90=-1; charge640=-1; bsl=-1; bmax=-1; bmaxp=-1; bmin=-1; bminp=-1; bimax=-1; bslEnd=-1; rms=-1; rmsEnd=-1; max=-1; min=-1; t0=-1; tMax=-1; tMin=-1;}
       TDartCh(){Reset();}
       virtual ~TDartCh(){Reset();}
-      TDartCh( const TDartCh &obj){ch=obj.ch; charge=obj.charge; charge90=obj.charge90; charge640=obj.charge640; bsl=obj.bsl; bslEnd=obj.bslEnd; rms=obj.rms; rmsEnd=obj.rmsEnd; high=obj.high; min=obj.min; t0=obj.t0; tMax=obj.tMax; tMin=obj.tMin;} // copy constructor
+      TDartCh( const TDartCh &obj){ch=obj.ch; charge=obj.charge; charge90=obj.charge90; charge640=obj.charge640; bsl=obj.bsl; bmax=obj.bmax; bmaxp=obj.bmaxp; bmin=obj.bmin; bminp=obj.bminp; bimax=obj.bimax; bslEnd=obj.bslEnd; rms=obj.rms; rmsEnd=obj.rmsEnd; max=obj.max; min=obj.min; t0=obj.t0; tMax=obj.tMax; tMin=obj.tMin;} // copy constructor
 
-      const TDartCh & operator = ( const TDartCh &obj ){ch=obj.ch; charge=obj.charge; charge90=obj.charge90; charge640=obj.charge640; bsl=obj.bsl; bslEnd=obj.bslEnd; rms=obj.rms; rmsEnd=obj.rmsEnd; high=obj.high; min=obj.min; t0=obj.t0; tMax=obj.tMax; tMin=obj.tMin; return *this;} 
+      const TDartCh & operator = ( const TDartCh &obj ){ch=obj.ch; charge=obj.charge; charge90=obj.charge90; charge640=obj.charge640; bsl=obj.bsl; bmax=obj.bmax; bmaxp=obj.bmaxp; bmin=obj.bmin; bminp=obj.bminp; bimax=obj.bimax; bslEnd=obj.bslEnd; rms=obj.rms; rmsEnd=obj.rmsEnd; max=obj.max; min=obj.min; t0=obj.t0; tMax=obj.tMax; tMin=obj.tMin; return *this;} 
       void Dump() const
       {
         std::cout << "- ch: " << ch << " charge: " << charge << " charge90: " << charge90 << " charge640: " << charge640 << std::endl;
-        std::cout << " bsl: " << bsl << " bslEnd: " << bslEnd << " rms: " << rms << " rmsEnd: " << rmsEnd << std::endl;
-        std::cout << " high: " << high << " min: " << min << " t0: " << t0 << " tMax: " << tMax << " tMin: " << tMin << std::endl;
+        std::cout << " bsl: " << bsl << " bslEnd: " << bslEnd << " bmax: " << bmax << " bmaxp: " << bmaxp << "bimax: " << bimax << "bmin" << bmin << "bminp" << bminp << " rms: " << rms << " rmsEnd: " << rmsEnd << std::endl;
+        std::cout << " max: " << max << " min: " << min << " t0: " << t0 << " tMax: " << tMax << " tMin: " << tMin << std::endl;
       }
       ClassDef (TDartEvent::TDartCh,2);
     };
@@ -46,18 +52,23 @@ class TDartEvent: public TObject
       int Vch;
       double Vcharge;
       double Vbsl;
+      double Vbmax;
+      double Vbmin;
+      double Vbmaxp;
+      double Vbminp;
+      double Vbimax;
       double Vrms;
-      double Vhigh;
+      double Vmax;
       double Vt0; 
       double VtMax;
       double Vmin;
       double VtMin;
-      void Reset() {Vch=-1; Vcharge=-1; Vbsl=-1; Vrms=-1; Vhigh=-1; Vt0=-1; VtMax=-1;Vmin=-1; VtMin=-1;}
+      void Reset() {Vch=-1; Vcharge=-1; Vbsl=-1; Vrms=-1; Vmax=-1; Vt0=-1; VtMax=-1;Vmin=-1; VtMin=-1;}
       TVetoCh(){Reset();}
       virtual ~TVetoCh(){Reset();}
-      TVetoCh( const TVetoCh &obj){Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vhigh=obj.Vhigh; Vt0=obj.Vt0; VtMax=obj.VtMax; Vmin=obj.Vmin; VtMin = obj.VtMin;}  // copy constructor
-      const TVetoCh & operator = ( const TVetoCh& obj ) {Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vhigh=obj.Vhigh; Vt0=obj.Vt0; VtMax=obj.VtMax; Vmin=obj.Vmin; VtMin = obj.VtMin; return *this;}
-      void Dump() const{std::cout << "- Vch: " << Vch << " Vcharge: " << Vcharge << " Vbsl: " << Vbsl << " Vrms: " << Vrms << " Vhigh: " << Vhigh << " Vt0: " << Vt0 << " VtMax: " << VtMax << " Vmin: " << Vmin << " VtMin: " << VtMin <<  std::endl;}
+      TVetoCh( const TVetoCh &obj){Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vmax=obj.Vmax; Vt0=obj.Vt0; VtMax=obj.VtMax; Vmin=obj.Vmin; VtMin = obj.VtMin;}  // copy constructor
+      const TVetoCh & operator = ( const TVetoCh& obj ) {Vch=obj.Vch; Vcharge=obj.Vcharge; Vbsl=obj.Vbsl; Vrms=obj.Vrms; Vmax=obj.Vmax; Vt0=obj.Vt0; VtMax=obj.VtMax; Vmin=obj.Vmin; VtMin = obj.VtMin; return *this;}
+      void Dump() const{std::cout << "- Vch: " << Vch << " Vcharge: " << Vcharge << " Vbsl: " << Vbsl << " Vrms: " << Vrms << " Vmax: " << Vmax << " Vt0: " << Vt0 << " VtMax: " << VtMax << " Vmin: " << Vmin << " VtMin: " << VtMin <<  std::endl;}
      ClassDef (TDartEvent::TVetoCh,2);
     };
 
