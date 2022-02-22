@@ -5,7 +5,7 @@ cd /storage/online
 #   start mhttpd on default port. (Mongoose https version)
 mhttpd  -D  -e dartdaq # you can optionally restrict access to localhost and other specified hosts - see mhttpd
 xterm -e fe1730 -e dartdaq&
-xterm -e wfViewer.exe -Edartdaq&
+# xterm -e wfViewer.exe -Edartdaq&
 mlogger -D -e dartdaq
 #end file
 # para analizar
