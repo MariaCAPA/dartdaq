@@ -29,6 +29,10 @@ public:
   void PlotCanvas(TDataContainer& dataContainer);
   void PlotCanvas(TV1730Waveform * wf);
 
+  // Maria 150222
+  TCanvas * GetMainCanvas();
+  TCanvas * fMainCanvas;
+
 };
 
 #endif

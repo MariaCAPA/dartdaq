@@ -31,7 +31,7 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
 
   // look for partial and open it
   int partial = fTree->GetTreeNumber();
-  std::string filename = fDataBaseName + Form("%05d_%02d.mid.lz4", fRun, partial);
+  std::string filename = fDataBaseName + Form("%05d_%03d.mid.lz4", fRun, partial);
   fReader = TMNewReader(filename.c_str());
   if (fReader->fError) 
   {
@@ -102,8 +102,8 @@ TV1730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index, bool draw
 int TDartReadRun::SetSelection (std::string cut)
 {
   fSelectedEvents.clear();
-  int nsel = fTree->Draw("Entry$", cut.c_str(), "goff");
-  for (int i=0; i<nsel; i++) fSelectedEvents.push_back(fTree->GetV1()[i]);
+  int nsel = fTree->Draw("Entry$", cut.c_str(), "goff"); // this function returns ~2 more events that actually pass the cuts
+  for (int i=0; i<nsel; i++) fSelectedEvents.push_back(fTree->GetV1()[i]); // here some events are counted twice
   std::cout << " selected " << nsel << " events " << std::endl;
   return nsel;
 }
@@ -121,6 +121,7 @@ TV1730Waveform *TDartReadRun::GetAverageFromSelectedEvents(bool draw, bool dump)
   int evNo;
   bool found=0;
 
+  int count = 0;
   for (unsigned int index=0; index<fSelectedEvents.size(); index++)
   {
 if (index%100==0) std::cout << " processed " << index << " events " << std::endl;
@@ -133,7 +134,7 @@ if (index%100==0) std::cout << " processed " << index << " events " << std::endl
     // if it has changed, open new file 
     if (partial!=prevPartial)
     {
-      std::string filename = fDataBaseName + Form("%05d_%02d.mid.lz4", fRun, partial);
+      std::string filename = fDataBaseName + Form("%05d_%03d.mid.lz4", fRun, partial);
       fReader = TMNewReader(filename.c_str());
       if (fReader->fError) 
       {
@@ -154,15 +155,21 @@ if (index%100==0) std::cout << " processed " << index << " events " << std::endl
         dataContainer.SetMidasEventPointer(event);
         visu.UpdateHistograms(dataContainer);
         average->AddWaveform(visu.fWf);
+        count++;
         found=1;
       }
     } // end while event not found
 
   } // end  selected events loop
+  
+  TV1730Waveform * average_norm = new TV1730Waveform("average_norm");
+ 
+  average_norm->NormalizeWaveform(average, count);
+
   if (draw)
   {
     visu.PlotCanvas(average);
   }
-  return average;
+  return average_norm;
    
 }
