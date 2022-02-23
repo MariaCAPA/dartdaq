@@ -11,6 +11,16 @@
 #include "TDartAnaManager.hxx"
 #include "TEventProcessor.hxx"
 
+#include <TMidasEvent.h>
+#include <TDataContainer.hxx>
+#include <THistogramArrayBase.h>
+
+#include "midasio.h"
+
+
+const int VMEBUS_BOARDNO = 0;
+
+
 
 class Analyzer: public TRootanaEventLoop {
 
@@ -47,6 +57,8 @@ public:
   {
 std::cout << " is offline : " << IsOffline() << std::endl;
     TEventProcessor::instance()->SetRun(run);
+
+
     //CreateOutputFile("test");
     // Create a TTree
     fTree = new TTree("td",Form("MIDAS data run %d",run));
@@ -60,6 +72,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
     fTree->Write();
     CloseRootFile();
   }
+
 
   
   
@@ -117,9 +130,77 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 
 }; 
 
+int Initializetmin(const char *file)
+{
+  // read  number of channels
+
+  double dummy0, dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, dummy9, dummy10, dummy11, tMax;
+
+  TMReaderInterface * reader = TMNewReader(file);
+  if (reader->fError)
+  {
+    printf("Cannot open input file \"%s\"\n",file);
+    delete reader;
+    return -1;
+  }
+
+  TMidasEvent event;
+  char name[100];
+  sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
+  int ev=0;
+  int nCh=0;
+
+  std::vector<double> tini_aux; // auxiliar array
+  std::vector<double> nEv; // auxiliar array
+  // READ FIRST 100 events
+  while (TMReadEvent(reader, &event) && ev<100)
+  {
+    if ((event.GetEventId() & 0xFFFF) == 0x8000) continue; // begin of run
+    event.SetBankList();
+    //event.Print();
+    TDataContainer dataContainer;
+    // Set the midas event pointer in the physics event.
+    dataContainer.SetMidasEventPointer(event);
+
+    TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
+    // if there are no channels, return 
+    if (!V1730 || V1730->GetNChannels()==0)
+    {
+      printf("Didn't see bank %s or there are no channels \n", name);
+      return -1;
+    }
+
+    // for first event, initialize nchannels and vectors
+    if (nCh==0)
+    {
+      nCh =  V1730->GetNChannels();
+      // initialize to 0 auxliar array
+      for (int i=0; i<nCh; i++) tini_aux.push_back(0);
+      for (int i=0; i<nCh; i++) nEv.push_back(100);
+    } // end if nch==0
+
+    // loop in channels
+    for (int i=0; i<nCh; i++)
+    {
+      TEventProcessor::instance()->GetBasicParam(V1730->GetChannelData(i), dummy0, dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, tMax, dummy9, dummy10, dummy11);
+      if (tMax>0) tini_aux[i]+=tMax;
+      else nEv[i]--;
+    }
+    ev++;
+  }
+
+  // set tini vals
+  for (int i=0; i<nCh; i++) {TEventProcessor::tini_push_back(tini_aux[i]/nEv[i]); std::cout << " ch " << i << " tini: " << tini_aux[i]/nEv[i] << std::endl;}
+
+  return 0;
+}
+
 
 int main(int argc, char *argv[])
 {
+
+  int error = Initializetmin(argv[1]);
+  if (error) return error;
 
   Analyzer::CreateSingleton<Analyzer>();
   return Analyzer::Get().ExecuteLoop(argc, argv);

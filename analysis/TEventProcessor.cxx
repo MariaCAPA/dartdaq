@@ -9,6 +9,7 @@ using namespace std;
 const int VMEBUS_BOARDNO = 0;
 
 TEventProcessor* TEventProcessor::s_instance = 0;
+std::vector<double> TEventProcessor::tini;
 
 TEventProcessor* TEventProcessor::instance() 
 {
@@ -97,6 +98,9 @@ int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
   double bsl=0; 
   double rms=0; 
   double nRMS=5; 
+
+  // LUDO: average 100 first events for channel i in 
+  //TEventProcessor::tini[i]
 
   //Calculation of baseline and rms at the beginning of the wf
   int samp=0;
