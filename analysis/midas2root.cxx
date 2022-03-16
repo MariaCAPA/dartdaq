@@ -81,6 +81,9 @@ std::cout << " is offline : " << IsOffline() << std::endl;
   bool ProcessMidasEvent(TDataContainer& dataContainer)
   {
 //std::cout << " processing event " << dataContainer.GetMidasEvent().GetSerialNumber() << std::endl;
+    TMidasEvent & event = dataContainer.GetMidasEvent();
+    int nbk = event.SetBankList();
+//std::cout << " nbk: " << nbk << std::endl;
     TEventProcessor::instance()->ProcessMidasEvent(dataContainer);
 
     fTree->Fill();
@@ -156,7 +159,8 @@ int Initializetmin(const char *file)
   while (TMReadEvent(reader, &event) && ev<100)
   {
     if ((event.GetEventId() & 0xFFFF) == 0x8000) continue; // begin of run
-    event.SetBankList();
+    int nbk = event.SetBankList();
+
     //event.Print();
     TDataContainer dataContainer;
     // Set the midas event pointer in the physics event.
@@ -188,10 +192,10 @@ int Initializetmin(const char *file)
     }
     ev++;
   }
-
+  
   // set tini vals
   for (int i=0; i<nCh; i++) {TEventProcessor::tini_push_back(tini_aux[i]/nEv[i]); std::cout << " ch " << i << " tini: " << tini_aux[i]/nEv[i] << std::endl;}
-
+  
   return 0;
 }
 

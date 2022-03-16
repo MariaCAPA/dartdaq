@@ -634,7 +634,7 @@ INT read_trigger_event(char *pevent, INT off)
   // OJO!!!!!
   // los bancos con 16 bits tienen tambien un tamanio maximo a 32KB
   // si quiero un banco ilimitado tengo que definirlo como de 32 bits 
-  bk_init32(pevent); 
+  bk_init32(pevent);
 
   uint32_t NumEvents = 0;
   if (BufferSize != 0) 
@@ -742,11 +742,13 @@ INT read_trigger_event(char *pevent, INT off)
 
      }
      bk_close(pevent, pidata);
+  //VERBOSE
+  //std::cout << "ev " << iev << " bank name: " << bankName<< " copied data " << copied <<  " ch size " << Event16->ChSize[0] <<  " size WORD " << sizeof(WORD) << " bk_size: " << bk_size(pevent) << std::endl;
   }
 
   //VERBOSE
-  //std::cout << "num ev " << NumEvents << " copied data " << copied <<  " ch size " << Event16->ChSize[0] <<  " size WORD " << sizeof(WORD) << std::endl;
-  return bk_size(pevent);
+  //std::cout << "num ev " << NumEvents << " copied data " << copied <<  " ch size " << Event16->ChSize[0] <<  " size WORD " << sizeof(WORD) << " bk_size: " << bk_size(pevent) << std::endl;
+  return bk_size(pevent); 
 }
 
 /*******************
