@@ -13,6 +13,7 @@ class TDartEvent;
 //TV1730Waveform *GetWaveform(std::string fname, int evNo);
 class TV1730WaveformM;
 class TDataContainer;
+class TV1730RawData;
 
 class TDartVisu: public TRootanaDisplay {
 public:
@@ -26,7 +27,8 @@ public:
   virtual ~TDartVisu() {};
   void ResetHistograms(){}
   void UpdateHistograms(TDataContainer& dataContainer);
-  void PlotCanvas(TDataContainer& dataContainer);
+  void UpdateHistograms(TV1730RawData * V1730);
+  void PlotCanvas();
   void PlotCanvas(TV1730Waveform * wf);
 
   // Maria 150222

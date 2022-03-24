@@ -3,6 +3,7 @@
 #include "math.h"
 #include <algorithm>
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 
 using namespace std;
@@ -29,25 +30,36 @@ void TEventProcessor::Reset()
 
 int TEventProcessor::ProcessMidasEvent(TDataContainer& dataContainer) 
 {
-  static ULong64_t prevTime = 0;
   fDartEvent->Reset();
 
   fDartEvent->run=fRun;
   fDartEvent->eventNumber= dataContainer.GetMidasEvent().GetSerialNumber();
+  fDartEvent->midasEventNumber= dataContainer.GetMidasEvent().GetSerialNumber();
+  fDartEvent->bankNumber= 0;
   fDartEvent->time = dataContainer.GetMidasEvent().GetTimeStamp();
 
   char name[100];
   sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
   TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
-
-  fDartEvent->timeNs = V1730->GetHeader().timeStampNs;
-
   // if there are no channels, return 
   if (!V1730 || V1730->GetNChannels()==0) 
   {
     printf("Didn't see bank %s or there are no channels \n", name);
     return 0;
   }
+  int retval = ProcessMidasEvent(V1730);
+  return retval;
+}
+
+int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730) 
+{
+  //static ULong64_t prevTime = 0;
+  static double prevTime = 0;
+
+  fDartEvent->timeNs = V1730->GetHeader().timeStampNs;
+
+  // VERBOSE
+  std::cout << " timeNs " << std::setprecision(10) << fDartEvent->timeNs  << std::endl;
 
   int nCh =  V1730->GetNChannels();
 

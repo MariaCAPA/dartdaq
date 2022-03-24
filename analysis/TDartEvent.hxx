@@ -78,6 +78,8 @@ class TDartEvent: public TObject
     {
       run=-1;
       eventNumber=-1;
+      midasEventNumber=-1;
+      bankNumber=-1;
       time=-1;
       timeNs=-1;
       vetoMult=-1;
@@ -94,6 +96,8 @@ class TDartEvent: public TObject
     // MEMEBERS
     int run;
     int eventNumber;
+    int midasEventNumber;
+    int bankNumber;
     double time;
     ULong64_t timeNs;
     int vetoMult;
@@ -109,6 +113,8 @@ class TDartEvent: public TObject
     {
       std::cout << " run: " << run << std::endl;
       std::cout << " eventNumber: " << eventNumber << std::endl;
+      std::cout << " midasEventNumber: " << midasEventNumber << std::endl;
+      std::cout << " bankNumber: " << bankNumber << std::endl;
       std::cout << " time: " << time << std::endl;
       std::cout << " timeNs: " << timeNs << std::endl;
       std::cout << " vetoMult: " << vetoMult << std::endl;
@@ -125,7 +131,7 @@ class TDartEvent: public TObject
 
     }
 
-  ClassDef (TDartEvent,2);
+  ClassDef (TDartEvent,3);
 };
 
 

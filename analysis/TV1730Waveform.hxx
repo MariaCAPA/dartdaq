@@ -16,6 +16,7 @@ public:
 
   void Initialize();
   void UpdateHistograms(TDataContainer& dataContainer) override;
+  void UpdateHistograms(TV1730RawData * V1730);
   void AddHistogramsChannel(TDataContainer &dataContainer, int ch);
   void AddWaveform(TV1730Waveform* wf);
   void NormalizeWaveform(TV1730Waveform* wf, int Nev);

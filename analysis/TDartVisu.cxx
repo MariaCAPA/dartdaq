@@ -43,8 +43,15 @@ void TDartVisu::UpdateHistograms(TDataContainer& dataContainer)
   fWf->UpdateHistograms(dataContainer);
 }
 
-void TDartVisu::PlotCanvas(TDataContainer& dataContainer)
+void TDartVisu::UpdateHistograms(TV1730RawData * V1730)
 {
+  fWf->UpdateHistograms(V1730);
+}
+
+void TDartVisu::PlotCanvas()
+{
+  int nch=fWf->GetNChannels();
+
   if(GetDisplayWindow()->GetCurrentTabName().compare("WF") == 0)
   {
     int trigger = 669*2; //ns
@@ -55,8 +62,8 @@ void TDartVisu::PlotCanvas(TDataContainer& dataContainer)
     //TCanvas* c1 = GetDisplayWindow()->GetCanvas("WF"); // MARIA 150222
     TCanvas* c1 = GetMainCanvas();
     c1->Clear();
-    c1->Divide(1,2);
-    for (int i=0; i<2; i++)
+    c1->Divide(1,nch);
+    for (int i=0; i<nch; i++)
     {
       c1->cd(i+1);
       fWf->GetHistogram(i)->Draw();
@@ -155,13 +162,14 @@ void TDartVisu::PlotCanvas(TDataContainer& dataContainer)
 
 void TDartVisu::PlotCanvas(TV1730Waveform * wf)
 {
+  int nch=wf->GetNChannels();
   if(GetDisplayWindow()->GetCurrentTabName().compare("WF") == 0)
   {
     //TCanvas* c1 = GetDisplayWindow()->GetCanvas("WF"); // MARIA 150222
     TCanvas* c1 = GetMainCanvas();
     c1->Clear();
-    c1->Divide(1,2);
-    for (int i=0; i<2; i++)
+    c1->Divide(1,nch);
+    for (int i=0; i<nch; i++)
     {
       c1->cd(i+1);
       wf->GetHistogram(i)->Draw();

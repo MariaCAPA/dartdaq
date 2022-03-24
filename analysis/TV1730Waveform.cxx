@@ -109,13 +109,11 @@ void TV1730Waveform::UpdateHistograms(TDataContainer &dataContainer)
 {
   //int fe_idx = dataContainer.GetMidasEvent().GetTriggerMask();
 
-  TDartEvent * dev = TEventProcessor::instance()->GetDartEvent(); // updated in TDartAnaManager
+  //TDartEvent * dev = TEventProcessor::instance()->GetDartEvent(); // updated in TDartAnaManager
 
   char name[100];
   sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
   TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
-
-  //int base_idx = fFEAndBoardToHistoOrder[std::make_pair(fe_idx, board_idx)] * fNChannels;
 
   // if there are no channels, return 
   if (!V1730 || V1730->GetNChannels()==0) 
@@ -123,6 +121,13 @@ void TV1730Waveform::UpdateHistograms(TDataContainer &dataContainer)
     printf("Didn't see bank %s or there are no channels \n", name);
     return ;
   }
+
+  UpdateHistograms(V1730);
+}
+
+void TV1730Waveform::UpdateHistograms(TV1730RawData * V1730)
+{
+  //int base_idx = fFEAndBoardToHistoOrder[std::make_pair(fe_idx, board_idx)] * fNChannels;
 
   // if channels or number of samples have changed, force new histograms
   TV1730RawChannel& channelData = V1730->GetChannelData(0);

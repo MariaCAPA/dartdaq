@@ -20,6 +20,8 @@
 
 const int VMEBUS_BOARDNO = 0;
 
+// provisional mientras tenga que hacer los banks a mano
+static int cont=0;
 
 
 class Analyzer: public TRootanaEventLoop {
@@ -83,10 +85,33 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 //std::cout << " processing event " << dataContainer.GetMidasEvent().GetSerialNumber() << std::endl;
     TMidasEvent & event = dataContainer.GetMidasEvent();
     int nbk = event.SetBankList();
+// VERBOSE
 //std::cout << " nbk: " << nbk << std::endl;
-    TEventProcessor::instance()->ProcessMidasEvent(dataContainer);
+     // Maria 160322 instead of:
+    //TEventProcessor::instance()->ProcessMidasEvent(dataContainer);
 
-    fTree->Fill();
+    // do manually
+    TMidas_BANK32 *pbk32 = NULL;
+    char *pdata = NULL;
+    for (int bk=0; bk<nbk; bk++)
+    {
+      TEventProcessor::instance()->GetDartEvent()->Reset();
+
+      TEventProcessor::instance()->GetDartEvent()->run=TEventProcessor::instance()->GetRun();
+      TEventProcessor::instance()->GetDartEvent()->eventNumber= cont++;
+      TEventProcessor::instance()->GetDartEvent()->midasEventNumber= event.GetSerialNumber();
+      TEventProcessor::instance()->GetDartEvent()->bankNumber= bk;
+      TEventProcessor::instance()->GetDartEvent()->time = event.GetTimeStamp();
+
+      //void ** pdata;
+      //event.IterateBank32(&pbk32, (char**)pdata);
+      event.IterateBank32(&pbk32, &pdata);
+      if (pbk32 == NULL) break;
+      TV1730RawData *bank = new TV1730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
+      std::cout << " bank " << bk << " name " << pbk32->fName << " size " << pbk32->fDataSize << " type: " << pbk32->fType << std::endl;
+      TEventProcessor::instance()->ProcessMidasEvent(bank);
+      fTree->Fill();
+    }
 
     return true;
 

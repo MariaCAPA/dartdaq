@@ -56,7 +56,6 @@ void THistoCharges::CreateHistograms()
 void THistoCharges::UpdateHistograms(TDataContainer& dataContainer)
 {
   TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
-  //TEventProcessor::instance()->ProcessMidasEvent(dataContainer); // MARIA  done by TDartAnaManager before calling UpdateHistograms
 
   for(unsigned int i = 0; i < dev->dartChannel.size(); i++)
   {
@@ -112,7 +111,6 @@ void THistoHigh::CreateHistograms()
 void THistoHigh::UpdateHistograms(TDataContainer& dataContainer)
 {
   TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
-  //TEventProcessor::instance()->ProcessMidasEvent(dataContainer); // MARIA  done by TDartAnaManager before calling UpdateHistograms
 
   for(unsigned int i = 0; i < dev->dartChannel.size(); i++)
   {
@@ -190,7 +188,6 @@ void THistoChargeSummary::CreateHistograms()
 void THistoChargeSummary::UpdateHistograms(TDataContainer& dataContainer)
 {
   TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
-  //TEventProcessor::instance()->ProcessMidasEvent(dataContainer); // MARIA  done by TDartAnaManager before calling UpdateHistograms
 
   GetHistogram(0)->Fill(dev->totCharge);
   GetHistogram(1)->Fill(dev->vetoCharge);

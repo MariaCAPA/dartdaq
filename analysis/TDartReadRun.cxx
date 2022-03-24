@@ -16,13 +16,17 @@
 #include "TTree.h"
 #include "TDartVisu.hxx"
 
-TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
+// Maria 240322 
+// original Get waveform function when the midas event contain just a waveform per channel
+// untill the software buffer is implemented, use the other implementation,
+// and keep this as GetWaveformAuxiliar
+TV1730Waveform *TDartReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump)
 {
   TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
   //manager.AddHistogram(wf);
   //display.AddSingleCanvas(wf->CreateCanvas(), wf->GetTabName());
 
-  if (fReader) delete fReader; 
+  if (fReader) delete fReader;  fReader=0;
 
   // DUmp event
   fTree->GetEntry(evNo);
@@ -36,7 +40,7 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
   if (fReader->fError) 
   {
     printf("Cannot open input file \"%s\"\n",filename.c_str());
-    delete fReader;
+    delete fReader; fReader=0;
     return 0;
   }
 
@@ -55,11 +59,96 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
       dataContainer.SetMidasEventPointer(event);
       visu.UpdateHistograms(dataContainer);
       //visu.ProcessMidasEvent(dataContainer);
-      if (draw) visu.PlotCanvas(dataContainer);
+      if (draw) visu.PlotCanvas();
+      //manager.UpdateTransientPlots(dataContainer);
+      delete fReader; fReader=0;
+      return visu.fWf;
+    }
+  }
+  delete fReader; fReader=0;
+  return 0;
+}
+
+// Maria 240322 
+// Get waveform, when the event can have several waveforms in the same event.
+// Use this untill the software buffer is implemented. After that, 
+// every midas event will contain only one waveform per channel, 
+// so I can come back to GetWaveform function, that for now is in 
+// GetWaveformAuxiliar
+TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
+{
+  TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  //manager.AddHistogram(wf);
+  //display.AddSingleCanvas(wf->CreateCanvas(), wf->GetTabName());
+
+  if (fReader) delete fReader;  fReader=0;
+
+  // DUmp event
+  fTree->GetEntry(evNo);
+  if(dump) fCurrentEv->Dump();
+  visu.fCurrentEv = fCurrentEv;
+  // get midas and bank numbers
+  int midasNumber = fCurrentEv->midasEventNumber;
+  int bankNumber = fCurrentEv->bankNumber;
+
+  // look for partial and open it
+  int partial = fTree->GetTreeNumber();
+  std::string filename = fDataBaseName + Form("%05d_%03d.mid.lz4", fRun, partial);
+  fReader = TMNewReader(filename.c_str());
+  if (fReader->fError) 
+  {
+    printf("Cannot open input file \"%s\"\n",filename.c_str());
+    delete fReader; fReader=0;
+    return 0;
+  }
+
+  std::cout << "Partial: " << partial << std::endl;
+
+  TMidasEvent event;
+  while (TMReadEvent(fReader, &event))
+  {
+    if ((event.GetEventId() & 0xFFFF) == 0x8000) continue; // begin of run
+    if (event.GetSerialNumber()==(unsigned int)midasNumber)
+    {
+      int nbk = event.SetBankList();
+      
+      if (nbk==1)
+      {
+        TDataContainer dataContainer;
+        // Set the midas event pointer in the physics event.
+        dataContainer.SetMidasEventPointer(event);
+        visu.UpdateHistograms(dataContainer);
+        //visu.ProcessMidasEvent(dataContainer);
+      }
+
+      // iterate in banks
+      TMidas_BANK32 *pbk32 = NULL;
+      char *pdata = NULL;
+      int bk=-1;
+      do 
+      {
+        event.IterateBank32(&pbk32, &pdata);
+        bk++;
+      } while (bk!=bankNumber && pbk32!=NULL);
+
+      if (pbk32==NULL) 
+      {
+        std::cout << " midas event " << midasNumber << " bank " << bankNumber << " not found " << std::endl;
+    
+        delete fReader; fReader=0;
+        return 0;
+      }
+
+      TV1730RawData *bank = new TV1730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
+      visu.UpdateHistograms(bank);
+        // std::cout << " bank " << bk << " name " << pbk32->fName << " size " << pbk32->fDataSize << " type: " << pbk32->fType << std::endl;
+      if (draw) visu.PlotCanvas();
+      delete fReader; fReader=0;
       //manager.UpdateTransientPlots(dataContainer);
       return visu.fWf;
     }
   }
+  delete fReader; fReader=0;
   return 0;
 }
 
@@ -139,7 +228,7 @@ if (index%100==0) std::cout << " processed " << index << " events " << std::endl
       if (fReader->fError) 
       {
         printf("Cannot open input file \"%s\"\n",filename.c_str());
-        delete fReader;
+        delete fReader; fReader=0;
         return 0;
       }
       prevPartial=partial;

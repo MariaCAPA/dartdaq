@@ -16,8 +16,10 @@ public:
   void Reset();
 
   TDartEvent * GetDartEvent(){return fDartEvent;}
+  int GetRun() {return fRun;}
  
   int ProcessMidasEvent(TDataContainer& dataContainer);
+  int ProcessMidasEvent(TV1730RawData * V1730);
   void SetRun(int run) {fRun=run;} 
 
   static void tini_push_back(double val) {tini.push_back(val);}
