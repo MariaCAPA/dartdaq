@@ -108,7 +108,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
       event.IterateBank32(&pbk32, &pdata);
       if (pbk32 == NULL) break;
       TV1730RawData *bank = new TV1730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
-      std::cout << " bank " << bk << " name " << pbk32->fName << " size " << pbk32->fDataSize << " type: " << pbk32->fType << std::endl;
+      //std::cout << " bank " << bk << " name " << pbk32->fName << " size " << pbk32->fDataSize << " type: " << pbk32->fType << std::endl;
       TEventProcessor::instance()->ProcessMidasEvent(bank);
       fTree->Fill();
     }
