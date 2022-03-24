@@ -59,7 +59,7 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   fDartEvent->timeNs = V1730->GetHeader().timeStampNs;
 
   // VERBOSE
-  std::cout << " timeNs " << std::setprecision(10) << fDartEvent->timeNs  << std::endl;
+  //std::cout << " timeNs " << std::setprecision(10) << fDartEvent->timeNs  << std::endl;
 
   int nCh =  V1730->GetNChannels();
 
