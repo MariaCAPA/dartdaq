@@ -37,7 +37,8 @@ typedef long int INT64;
 // 8000 us * 500 S/us * 2 B/S * 16 ch = 128MB
 //#define V1730_MAX_EVENT_SIZE 128000000
 
-#define MAXEV_SINGLEREADOUT 20
+#define MAXEV_SINGLEREADOUT 1024
+#define MAXEVMIDASINBUFFER 20
 
 #define MAX_CH 16
 #define CLOCK2NS 8
@@ -78,8 +79,8 @@ INT display_period = 000;
 // maximum event size produced by this frontend 
 INT max_event_size = V1730_MAX_EVENT_SIZE;
 
-// buffer size to hold up to MAXEV_SINGLEREADOUT  events 
-INT event_buffer_size = MAXEV_SINGLEREADOUT * max_event_size + 10000;
+// buffer size to hold up to MAXEVMIDASINBUFFER  events 
+INT event_buffer_size = MAXEVMIDASINBUFFER * max_event_size + 10000;
 
 // maximum event size for fragmented events (EQ_FRAGMENTED) 
 INT max_event_size_frag = 5 * 1024 * 1024;
@@ -112,6 +113,7 @@ INT read_trigger_event(char *pevent, INT off);
 void register_cnaf_callback(int debug);
 int set_relative_Threshold();
 int configure_trigger();
+
 
 
 //-- Equipment list ------------------------------------------------
@@ -354,8 +356,6 @@ INT begin_of_run(INT run_number, char *error)
   if (ret != CAEN_DGTZ_Success) 
     std::cout << " Error Cannot set levels to NIM.  Digitizer error code: " << ret << std::endl;
 
-  ret = CAEN_DGTZ_SetMaxNumEventsBLT(VMEhandle,MAXEV_SINGLEREADOUT);       // Set the max number of events to transfer in a sigle readout 
-
   //////////////// CHANNEL DYNAMIC RANGE OFFSET AND TRIGGER THRESHOLD
   for(size_t i=0;i<BoardInfo.Channels;++i)
   {
@@ -458,7 +458,11 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   std::cout << " active channels :  " << enabledChannels <<  " N samples: " <<  v1730_settings.recordlength << std::endl;
   uint32_t lstatus;
   ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BUFFER_ORGANIZATION, &lstatus);
-  std::cout << " buffer organization . Number of buffers: " << pow(2,lstatus)  << std::endl;
+  int NBUFFERS = pow(2,lstatus);
+  std::cout << " buffer organization . Number of buffers: " << NBUFFERS  << std::endl;
+
+  // not necesary. Check that then is the maximum
+  ret = CAEN_DGTZ_SetMaxNumEventsBLT(VMEhandle,NBUFFERS);       // Set the max number of events to transfer in a sigle readout
 
   // MARIA 150222
   uint32_t boardCfg;
@@ -677,7 +681,7 @@ INT read_trigger_event(char *pevent, INT off)
 
     uint16_t flags = 0;
 
-    ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, 0, &EventInfo, &EventPtr);
+    ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, iev, &EventInfo, &EventPtr);
     if (ret != CAEN_DGTZ_Success) 
     {
       std::cout << " error getting event info. Ev number " << iev << " of total events " << NumEvents << " buffer size: " << BufferSize  << " mybuffer size " << myBufferSize << std::endl;
@@ -892,7 +896,6 @@ int set_relative_Threshold()
         return -1;
 	  }
 
-	  //ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, 0, &EventInfo, &EventPtr); // MARIA 180322
 	  ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, id, &EventInfo, &EventPtr); 
 	  if (ret) 
       {
