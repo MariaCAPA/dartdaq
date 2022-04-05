@@ -896,7 +896,7 @@ int set_relative_Threshold()
         return -1;
 	  }
 
-	  ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, id, &EventInfo, &EventPtr); 
+	  ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, 0, &EventInfo, &EventPtr); 
 	  if (ret) 
       {
         std::cout << " error in get event info " << std::endl;
