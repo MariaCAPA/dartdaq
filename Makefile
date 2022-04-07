@@ -69,8 +69,8 @@ INC_CAEN = /usr/include # /home/daquser/CAEN/CAENVMELib-2.50/include
 # targets
 #
 
-PROGS_DIR = /home/daquser/dartdaq/
-PROGS = $(PROGS_DIR)/fe1730
+PROGS_DIR = ${HOME}/dartdaq/
+PROGS = $(PROGS_DIR)/fe1730Th $(PROGS_DIR)/fe1730
 
 LIBNAME = $(LIB_DIR)/libmidas.a
 LIB     = $(LIBNAME)
@@ -121,11 +121,14 @@ $(PROGS): $(LIBNAME)
 #
 # utilities
 #
+$(PROGS_DIR)/fe1730Th: $(PROGS_DIR)/fe1730Th.cxx $(LIB_DIR)/mfe.o
+	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) $(LIB_CAEN) $(ROOTLIBS)
+
 $(PROGS_DIR)/fe1730: $(PROGS_DIR)/fe1730.cxx $(LIB_DIR)/mfe.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) $(LIB_CAEN) $(ROOTLIBS)
 
 
 clean::
 	rm -f *.o *~ \#*
-	rm -f fe1730
+	rm -f fe1730Th fe1730
 
