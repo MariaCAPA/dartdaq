@@ -14,7 +14,18 @@
 #include <cstring>
 #include <iostream>
 #include <math.h>
+#include <atomic>
+#include <sys/time.h>
+#include <sched.h>
+#include <sys/resource.h>
+
+#include <fstream>
+#include <string>
+#include <vector>
+#include <memory>
+
 #include "midas.h"
+#include "msystem.h"
 #include "CAENDigitizer.h"
 #include "CAENComm.h"
 #include "v1725Raw.h"
@@ -30,15 +41,15 @@ typedef int INT32;
 
 #include "experim.h"
 // Max event size  supported (in bytes).
-// up to 1us per event ->
+// up to 1ms per event ->
 // 1000 us * 500 S/us * 2 B/S * 16 ch = 16MB
 #define V1730_MAX_EVENT_SIZE 16000000
 
-// 8000 us * 500 S/us * 2 B/S * 16 ch = 128MB
-//#define V1730_MAX_EVENT_SIZE 128000000
+// 20 us * 500 S/us * 2 B/S * 16 ch = 320KB
+//#define V1730_MAX_EVENT_SIZE 320000
 
 #define MAXEV_SINGLEREADOUT 1024
-#define MAXEVMIDASINBUFFER 20
+#define MAXEVMIDASINBUFFER 50
 
 #define MAX_CH 16
 #define CLOCK2NS 8
@@ -58,8 +69,8 @@ CAEN_DGTZ_BoardInfo_t BoardInfo;
 uint32_t  AllocatedSize;
 uint32_t BufferSize;
 CAEN_DGTZ_EventInfo_t       EventInfo;
-char *buffer = NULL;
-INT32 myBufferSize=0;
+char *auxBuffer = NULL;
+INT32 auxBufferSize=0;
 char *EventPtr = NULL;
 CAEN_DGTZ_UINT16_EVENT_t    *Event16 = NULL;
 int enabledChannels;
@@ -96,6 +107,27 @@ extern HNDLE hDB;  // FROM mfe.h
 HNDLE hSet;
 V1730_DATA00_SETTINGS v1730_settings;
 uint16_t channel_mask; // Mask of enabled channels
+int rb_handle; // handle of the circular buffer
+std::atomic<int> num_events_in_rb_;  //!< Number of events stored in ring buffer
+int GetNumEventsInRB() {return num_events_in_rb_.load();}
+void IncrementNumEventsInRB() { num_events_in_rb_++; }
+void IncrementNumEventsInRB(int n) { num_events_in_rb_+=n;}
+void DecrementNumEventsInRB() { num_events_in_rb_--; }
+void DecrementNumEventsInRB(int n) { num_events_in_rb_-=n; }
+void ResetNumEventsInRB() { num_events_in_rb_=0; }
+
+
+
+// Multithread stuff
+pthread_t tid;          //!< Thread ID
+int thread_retval = 0;  //!< Thread return value
+int thread_link=0;        //!< Link number associated with each thread
+#define NBCORES           8   //!< Number of cpu cores, for process/thread locking
+
+bool runInProgress = false; //!< run is in progress
+bool stopRunInProgress = false; //!< stop run is in progress (empty buffers)
+
+
 
 //-- Function declarations -----------------------------------------
 
@@ -108,11 +140,15 @@ INT resume_run(INT run_number, char *error);
 INT frontend_loop();
 extern void interrupt_routine(void);
 
-INT read_trigger_event(char *pevent, INT off);
+INT read_event_from_rb(char *pevent, INT off);
 
 void register_cnaf_callback(int debug);
 int set_relative_Threshold();
 int configure_trigger();
+void * readThread(void * arg);
+INT checkEvent();
+INT readEvent(void * );
+
 
 
 BOOL equipment_common_overwrite = TRUE;
@@ -157,7 +193,7 @@ EQUIPMENT equipment[] = {
      0,                      // number of sub events 
      0,                      // don't log history 
      "", "", "",},
-    read_trigger_event,      // readout routine 
+    read_event_from_rb,      // readout routine 
     NULL, NULL,
     NULL,                   // aqui iria la bank list, voy a ver si vale para algo o no
     }
@@ -266,9 +302,20 @@ std::cout << " polled " << std::endl;
   printf("\tROC FPGA Release is %s\n", BoardInfo.ROC_FirmwareRel);
   printf("\tAMC FPGA Release is %s\n", BoardInfo.AMC_FirmwareRel);
 
+  // TODO CALIBRATE PEDESTASLS
+
+  // set main thread to core 0
+/*
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  CPU_SET(0, &mask);  //Main thread to core 0
+  if( sched_setaffinity(0, sizeof(mask), &mask) < 0 )
+  {
+    printf("ERROR setting cpu affinity for main thread: %s\n", strerror(errno));
+  }
+*/
 
 
-  // CALIBRATE PEDESTASLS
   
   return SUCCESS;
 }
@@ -297,6 +344,8 @@ INT frontend_exit()
 INT begin_of_run(INT run_number, char *error)
 {
   CAEN_DGTZ_ErrorCode ret;
+
+  runInProgress = true;
 
   // read V1730 settings 
   int status;
@@ -406,22 +455,11 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   ret = CAEN_DGTZ_SetSWTriggerMode(VMEhandle, CAEN_DGTZ_TRGMODE_ACQ_ONLY);
   if (ret != CAEN_DGTZ_Success) std::cout << " Error Cannot set software trigger. Digitizer error code: " << ret << std::endl; 
 
-  //check for possible failures after programming the digitizer
-  // MARIA NOT BY NOW
-/*
-  ret = CheckBoardFailureStatus(VMEhandle, BoardInfo);
-  if (ret != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure after configuration!. Digitizer error code: " << ret << std::endl; 
-    frontend_exit();
-    exit(1);
-  }
-*/
 
-  if (buffer){delete [] buffer;buffer=0;} 
+  if (auxBuffer){delete [] auxBuffer;auxBuffer=0;} 
 
-  myBufferSize = (16+enabledChannels*v1730_settings.recordlength*2)*(MAXEV_SINGLEREADOUT+1);
-  buffer = new char [myBufferSize]; 
+  auxBufferSize = (16+enabledChannels*v1730_settings.recordlength*2)*(MAXEV_SINGLEREADOUT+1);
+  auxBuffer = new char [auxBufferSize]; 
   // Allocate memory for event data and redout buffer
   ret = CAEN_DGTZ_AllocateEvent(VMEhandle, (void**)&Event16);
   if (ret != CAEN_DGTZ_Success) 
@@ -432,8 +470,9 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   }
   
 
-  //ret = CAEN_DGTZ_MallocReadoutBuffer(VMEhandle, &buffer,&AllocatedSize); /* WARNING: This malloc must be done after the digitizer programming */
   std::cout <<  " Board configuration done " << std::endl;
+
+  // SET RELATIVE THRESHOLD
   int retVal = set_relative_Threshold();
   if (retVal != 0) 
   {  
@@ -455,22 +494,19 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
 
   printf("End of begin_of_run\n");
 
-  // MARIA TODO
-  // READ 0x800C register -> number of buffers
   std::cout << " active channels :  " << enabledChannels <<  " N samples: " <<  v1730_settings.recordlength << std::endl;
   uint32_t lstatus;
   ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BUFFER_ORGANIZATION, &lstatus);
   int NBUFFERS = pow(2,lstatus);
   std::cout << " buffer organization . Number of buffers: " << NBUFFERS  << std::endl;
 
-  // not necesary. Check that then is the maximum
-  ret = CAEN_DGTZ_SetMaxNumEventsBLT(VMEhandle,NBUFFERS);       // Set the max number of events to transfer in a sigle readout
+  // Set the max number of events to transfer in a sigle readout
+  ret = CAEN_DGTZ_SetMaxNumEventsBLT(VMEhandle,NBUFFERS);       
 
-  // MARIA 150222
+  // read channel trigger conf
   uint32_t boardCfg;
   ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BOARD_CONFIG, &boardCfg);
   std::cout << " board config: " << boardCfg << std::endl;
-  // read channel trigger conf
   uint32_t valConf;
   uint32_t width;
   for(size_t i=0;i<BoardInfo.Channels/2;++i)
@@ -480,9 +516,27 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
     std::cout << " channels pair " << i << " channel_trigger_conf: " << valConf << " widht: " << width << " (x8 to obntain ns ) "  << std::endl;
   }
 
+  // CREATE CIRCULAR BUFFER 
+  status = rb_create(event_buffer_size, max_event_size, &rb_handle);
+  ResetNumEventsInRB(); // set number to 0
+  std::cout << " Circular buffer created with size " << event_buffer_size << " and max ev size: " << max_event_size << " and handle " << rb_handle << std::endl;
+  if(status != DB_SUCCESS)
+  {
+      cm_msg(MERROR, "fe1730", "Failed to create circular buffer"); 
+      exit(1);
+  }
+
   // ARM ACQUISITON
   CAEN_DGTZ_ClearData(VMEhandle);
   CAEN_DGTZ_SWStartAcquisition(VMEhandle);
+
+  // CREATE READ THREAD
+  status = pthread_create(&tid, NULL, &readThread, (void*)&thread_link);
+  if(status)
+  {
+      cm_msg(MERROR,"fe1730", "Couldn't create thread for read. Return code: %d", status);
+      exit(1);
+  }
 
   return SUCCESS;
 }
@@ -490,23 +544,119 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
 //-- End of Run ----------------------------------------------------
 INT end_of_run(INT run_number, char *error)
 {
-  // free readout buffer
-std::cout << "stopping daq ..." << std::endl;
-  CAEN_DGTZ_SWStopAcquisition(VMEhandle);
-  CAEN_DGTZ_ClearData(VMEhandle);
+  int * status;
+  if(runInProgress)
+  { 
+    runInProgress = false;  //Signal threads to quit
 
-std::cout << "free event ... " << std::endl;
-if (Event16)  CAEN_DGTZ_FreeEvent(VMEhandle, (void**)&Event16);
+    // Do not quit parent before children processes, wait for the proper
+    // child exit first.
+    pthread_join(tid,(void**)&status);
+    printf(">>> Thread %d joined, return code: %d\n", (int)tid, *status);
 
-std::cout << "free buffer ..." << std::endl;
-  //CAEN_DGTZ_FreeReadoutBuffer(&buffer);
-  if (buffer) {delete [] buffer; buffer=0;}
+    std::cout << "stopping daq ..." << std::endl;
+    CAEN_DGTZ_SWStopAcquisition(VMEhandle);
+    CAEN_DGTZ_ClearData(VMEhandle);
+
+    std::cout << "free event ... " << std::endl;
+    if (Event16)  CAEN_DGTZ_FreeEvent(VMEhandle, (void**)&Event16);
+
+    std::cout << "free buffer ..." << std::endl;
+    if (auxBuffer) {delete [] auxBuffer; auxBuffer=0;}
+
+    // free circular buffer
+    rb_delete(rb_handle);
+    rb_handle=-1;
+    ResetNumEventsInRB();
 
 
-  //Reset all IRQs    
+    //Reset all IRQs    
+  }
 
   return SUCCESS;
 }
+
+//
+//----------------------------------------------------------------------------
+void * readThread(void * arg)
+{
+  int link = *(int*)arg;
+  std::cout << "Started thread for link " << link << " out of " << NBCORES << " cores" << std::endl;
+
+  //Lock each thread to a different cpu core
+/*
+  cpu_set_t mask;
+  CPU_ZERO(&mask);
+  CPU_SET((link + 1), &mask);
+
+  if( sched_setaffinity(0, sizeof(mask), &mask) < 0 )
+  {
+    printf("ERROR setting cpu affinity for thread %d: %s\n", link, strerror(errno));
+  }
+*/
+
+  void *wp;
+  int status;
+  int rb_level;
+
+  while (runInProgress)
+  {
+
+
+    // Check if event in hardware to read
+    // MARIA TODO IMPLEMENT stopRunInProgress to empty buffer
+    if (!stopRunInProgress && checkEvent())
+    {
+      /* If we've reached 75% of the ring buffer space, don't read
+       * the next event.  Wait until the ring buffer level goes down.
+       * It is better to let the v1725 buffer fill up instead of
+       * the ring buffer, as this the v1725 will generate the HW busy to the DTM.
+       * MARIA TODO
+       */
+      rb_get_buffer_level(rb_handle, &rb_level);
+//if (verbose) std::cout << " buffer handle " << rb_handle << " level " << rb_level << std::endl;
+      // VERBOSE
+      //std::cout << " buffer level " << rb_level << std::endl;
+      if(rb_level > (int)(event_buffer_size*0.75))  // 0.75!!
+      {
+        // VERBOSE
+        std::cout << " buffer level " << rb_level << std::endl;
+        continue;
+      }
+
+      // Ok to read data
+      // VERBOSE
+      //std::cout << " n events in circular buffer: " << GetNumEventsInRB() << std::endl;
+      status = rb_get_wp(rb_handle, &wp, 100); // timeout in ms
+      if (status == DB_TIMEOUT) 
+      {
+        cm_msg(MERROR,"readThread", "Got wp timeout for thread %d . wp is %d . number of events in rb: %d . Is the ring buffer full?", link , wp, GetNumEventsInRB());
+        cm_msg(MERROR,"readThread", "Exiting thread %d with error", link);
+        thread_retval = -1;
+        pthread_exit((void*)&thread_retval);
+      }
+
+      // Read data and store in circular buffer
+      if(!readEvent(wp)) 
+      {
+        cm_msg(MERROR,"readThread", "Readout routine error on thread %d", link);
+        cm_msg(MERROR,"readThread", "Exiting thread %d with error", link);
+        thread_retval = -1;
+        pthread_exit((void*)&thread_retval);
+      }
+    } // end CheckEvent
+
+    // TODO MARIA check
+    // Sleep for 5us to avoid hammering the board too much
+    usleep(1);
+
+  }
+
+  std::cout << "Exiting thread " << link << " clean " << std::endl;
+  thread_retval = 0;
+  pthread_exit((void*)&thread_retval);
+}
+
 
 //-- Pause Run -----------------------------------------------------
 INT pause_run(INT run_number, char *error)
@@ -583,12 +733,130 @@ INT frontend_loop()
 // flag is used to time the polling 
 INT poll_event(INT source, INT count, BOOL test)
 {
+   bool evtReady = true;
+
+  if (GetNumEventsInRB() == 0) evtReady=false;
+
+  if (evtReady && !test) return 1;
+  usleep(20); // MARIA TODO
+  return 0;
+
+}
+
+INT checkEvent()
+{
 
   ///////// CHECK EVENT IS READY
    // MARIA DAQ ZGZ TEST APRIL22
   DWORD vmeStat;
   CAENComm_ErrorCode sCAEN = CAENComm_Read32(VMEhandle, V1725_VME_STATUS, &vmeStat);
   return (vmeStat & 0x1);
+
+}
+
+INT readEvent(void * wp)
+{
+  static uint64_t counter = 0;
+  static uint64_t prevTimeStamp = 0;
+  CAEN_DGTZ_ErrorCode ret;
+
+  // VERVOSE
+  //if (verbose) std::cout << " reading event ... " << std::endl;
+  
+  CAEN_DGTZ_ReadData(VMEhandle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, auxBuffer, &BufferSize);
+
+  uint32_t NumEvents = 0;
+  if (BufferSize != 0) 
+  {
+    ret = CAEN_DGTZ_GetNumEvents(VMEhandle, auxBuffer, BufferSize, &NumEvents);
+    if (ret != CAEN_DGTZ_Success) 
+    {
+      cm_msg(MERROR,"ReadEvent", "Communication error: %d", ret);
+      std::cout << " error getting  number of events" << std::endl;
+      return (ret == CAEN_DGTZ_Success);
+    }
+  }
+  else 
+  {
+    uint32_t lstatus;
+    ret = CAEN_DGTZ_ReadRegister(VMEhandle, CAEN_DGTZ_ACQ_STATUS_ADD, &lstatus);
+    if (ret != CAEN_DGTZ_Success) 
+    {
+      printf("Warning: Failure reading reg:%x (%d)\n", CAEN_DGTZ_ACQ_STATUS_ADD, ret);
+      cm_msg(MERROR,"ReadEvent", "Communication error: %d", ret);
+      return (ret == CAEN_DGTZ_Success);
+    }
+    else 
+    {
+      if (lstatus & (0x1 << 19)) 
+      {
+        std::cout << " ERR_OVERTEMP!!" << std::endl;
+        cm_msg(MERROR,"ReadEvent", "ERR_OVERTEMP: %d", ret);
+        return (ret == CAEN_DGTZ_Success);
+      }
+      else return 0; // nothing to read, return
+    }
+  }
+
+  ////////////////////////// HERE!
+  int copied=0;
+  WORD *pidata = (WORD*)wp; // MARIA treat wp as WORD array (short int)
+  for(int iev = 0; iev < (int)NumEvents; iev++) 
+  {
+
+    uint16_t flags = 0;
+    copied+=8*sizeof(WORD); // header
+
+    ret = CAEN_DGTZ_GetEventInfo(VMEhandle, auxBuffer, BufferSize, iev, &EventInfo, &EventPtr);
+    if (ret != CAEN_DGTZ_Success) 
+    {
+      std::cout << " error getting event info. Ev number " << iev << " of total events " << NumEvents << " buffer size: " << BufferSize  << " mybuffer size " << auxBufferSize << std::endl;
+        cm_msg(MERROR,"ReadEvent", "error getting event info. Event number: %d, error: %d", iev, ret);
+        return (ret == CAEN_DGTZ_Success);
+    }
+    ret = CAEN_DGTZ_DecodeEvent(VMEhandle, EventPtr, (void**)&Event16);
+
+    // 1st word: channel mask
+    *pidata++=channel_mask; 
+
+    // second word: flags ; 0 OK, 1-> error reading
+    *pidata++=flags; 
+
+    // two words: samples per channel
+    *((uint32_t*)pidata) = v1730_settings.recordlength;
+    pidata+=2;
+
+    // four words: time stamp
+    // TODO aniadir check in clock. This is only valid for rate < 1 / 17 sec
+    if (EventInfo.TriggerTimeTag<prevTimeStamp) counter++;
+    uint64_t clock = (uint64_t)(counter<<31) + EventInfo.TriggerTimeTag;
+    clock *= CLOCK2NS; 
+    *((uint64_t*)pidata) = clock;
+    prevTimeStamp = EventInfo.TriggerTimeTag;
+    pidata+=4;
+
+    for (int ch = 0; ch < (int32_t)BoardInfo.Channels; ch++)
+    {
+      if (v1730_settings.ch_enable[ch])
+      {
+        memcpy(pidata,Event16->DataChannel[ch], Event16->ChSize[ch]*sizeof(WORD));
+        pidata += Event16->ChSize[ch]; 
+        copied+=Event16->ChSize[ch]*sizeof(WORD);
+      }
+    }
+  }
+
+  /////////// increment circular buffer 
+  rb_increment_wp(rb_handle, copied);
+
+  IncrementNumEventsInRB(NumEvents); //atomic
+
+  // VERBOSE
+  //if (verbose) std::cout << " copied in cb " << copied << " bytes for " << NumEvents << " events. Events in buffer: " << GetNumEventsInRB() << std::endl;
+  if (ret != CAEN_DGTZ_Success)
+    cm_msg(MERROR,"ReadEvent", "error decoding event, error: %d", ret);
+
+  return (ret == CAEN_DGTZ_Success);
 
 }
 
@@ -622,19 +890,31 @@ INT interrupt_configure(INT cmd, INT source, PTYPE adr)
 }
 
 //-- Event readout (polled)  -------------------------------------------------
-INT read_trigger_event(char *pevent, INT off)
+//  read event from circular buffer
+INT read_event_from_rb(char *pevent, INT off)
 {
-  static uint64_t counter = 0;
-  static uint64_t prevTimeStamp = 0;
+  // VERBOSE
+  //std::cout << " read_from_rb: nEvInRB: " << GetNumEventsInRB() << std::endl;
 
-  CAEN_DGTZ_ErrorCode ret;
-  //if (verbose) std::cout << " reading event ... " << std::endl;
-  
-  // DWORD *pidata; // MARIA  MARIA!!!!
-  WORD *pidata; // MARIA short int
+  if (!runInProgress || GetNumEventsInRB()==0) return 0; // MARIA TODO tengo que hacer algo (matar thread) si numEv==0?
 
-  // MARIA APRIL22
-  CAEN_DGTZ_ReadData(VMEhandle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
+
+  WORD *dest; // MARIA short int
+
+  WORD *src=NULL;
+
+  int status = rb_get_rp(rb_handle, (void**)&src, 500); // 500 is a timeout in ms
+
+
+  if (status == DB_TIMEOUT) 
+  {
+    cm_msg(MERROR,"read_event_from_rb", "Got rp timeout for module");
+    printf("### num events: %d\n", GetNumEventsInRB());
+    return false;
+  }
+
+
+  // MARIA TODO . check header to verify this is ok?
 
   // > THE LINE BELOW SHOULD BE HERE AND NOWHERE ELSE < !
   // Maria: initialie global bank header
@@ -643,119 +923,32 @@ INT read_trigger_event(char *pevent, INT off)
   // si quiero un banco ilimitado tengo que definirlo como de 32 bits 
   bk_init32(pevent);
 
-  uint32_t NumEvents = 0;
-  if (BufferSize != 0) 
-  {
-    ret = CAEN_DGTZ_GetNumEvents(VMEhandle, buffer, BufferSize, &NumEvents);
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      std::cout << " error getting  number of events" << std::endl;
-      frontend_exit();
-      exit(1);
-    }
-  }
-  else 
-  {
-    uint32_t lstatus;
-    ret = CAEN_DGTZ_ReadRegister(VMEhandle, CAEN_DGTZ_ACQ_STATUS_ADD, &lstatus);
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      printf("Warning: Failure reading reg:%x (%d)\n", CAEN_DGTZ_ACQ_STATUS_ADD, ret);
-      frontend_exit();
-      exit(1);
-    }
-    else 
-    {
-      if (lstatus & (0x1 << 19)) 
-      {
-        std::cout << " ERR_OVERTEMP!!" << std::endl;
-        frontend_exit();
-        exit(1);
-      }
-    }
-  }
+  // create bank and copy data
+  char bankName [5];
+  sprintf(bankName, "WF%02d",VMEBUS_BOARDNO); 
+  bk_create(pevent, bankName, TID_UINT16,  (void **)&dest); // reserva memeoria en dest 
 
-  // MARIA VERBOSE
-  //std::cout << " num events : " << NumEvents << " buffer size " <<  BufferSize <<  std::endl;
+  // copy data 
+  int num = enabledChannels*v1730_settings.recordlength + 8; // header: mask(1)+flags(1)+lengh(2)+timestamp(4)
+  memcpy(dest, src, num*sizeof(WORD));
+  dest +=num;
 
-  int copied=0;
-  for(int iev = 0; iev < (int)NumEvents; iev++) 
-  {
+  // VERBOSE!!!
+  //if (verbose) std::cout << " channel mask : " << dest[0] << std::endl;
+  //if (verbose) std::cout << " flags : " << dest[1] << std::endl;
+  //if (verbose) std::cout << " pulse lenght : " << *(uint32_t*)&dest[2] << std::endl;
+  //if (verbose) std::cout << " timestamp : " << *(uint64_t*)&dest[4] << std::endl;
 
-    uint16_t flags = 0;
+  bk_close(pevent, dest);
 
-    ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, iev, &EventInfo, &EventPtr);
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      std::cout << " error getting event info. Ev number " << iev << " of total events " << NumEvents << " buffer size: " << BufferSize  << " mybuffer size " << myBufferSize << std::endl;
-      flags = 1;
-      return 0; // do not store event
-  //    frontend_exit();
-  //    exit(1);
-    }
-  // MARIA VERBOSE
-  //std::cout <<" Pattern " << EventInfo.Pattern << " ChannelMask " << EventInfo.ChannelMask << " EventCounter " << EventInfo.EventCounter<< " TriggerTimeTag " << EventInfo.TriggerTimeTag << std::endl;
-  // ChannelMask -> Mask of active channels
+  // VERBOSE!!
+  //if (verbose) std::cout << " read from cb " << num*sizeof(WORD) << " bytes . Events in buffer: " << GetNumEventsInRB() <<  " size bank: " << bk_size(pevent) << std::endl;
 
+  DecrementNumEventsInRB(); //atomic
+  rb_increment_rp(rb_handle, num*sizeof(WORD)); // MARIA TODO is this number equal to memcpy??
 
-    ret = CAEN_DGTZ_DecodeEvent(VMEhandle, EventPtr, (void**)&Event16);
-/*
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      std::cout << " error decoding event" << std::endl;
-      frontend_exit();
-      exit(1);
-    }
-*/
-
-     // create bank and copy data
-     char bankName [5];
-     sprintf(bankName, "WF%02d",VMEBUS_BOARDNO); 
-     bk_create(pevent, bankName, TID_UINT16,  (void **)&pidata); // reserva memeoria en pidata 
-
-     // 1st word: channel mask
-     *pidata++=channel_mask; 
-
-     // second word: flags ; 0 OK, 1-> error reading
-     *pidata++=flags; 
-
-     // two words: samples per channel
-     *((uint32_t*)pidata) = v1730_settings.recordlength;
-     pidata+=2;
-
-     // four words: time stamp
-     // TODO aniadir check in clock. This is only valid for rate < 1 / 17 sec
-     if (EventInfo.TriggerTimeTag<prevTimeStamp) counter++;
-     uint64_t clock = (uint64_t)(counter<<31) + EventInfo.TriggerTimeTag;
-     clock *= CLOCK2NS; 
-     *((uint64_t*)pidata) = clock;
-// DEB
-//std::cout << clock << " tag: " << EventInfo.TriggerTimeTag << " prev: " << prevTimeStamp << " counter: " << counter << std::endl;
-     prevTimeStamp = EventInfo.TriggerTimeTag;
-     pidata+=4;
-
-     for (int ch = 0; ch < (int32_t)BoardInfo.Channels; ch++)
-     {
-       if (v1730_settings.ch_enable[ch])
-       {
-         memcpy(pidata,Event16->DataChannel[ch], Event16->ChSize[ch]*sizeof(WORD));
-         pidata += Event16->ChSize[ch]; // MARIA TODO
-         //for (int jj=0; jj<Event16->ChSize[ch]; jj++) *pidata++ = Event16->DataChannel[ch][jj];
-         //for (int jj=0; jj<Event16->ChSize[ch]; jj++) std::cout <<  Event16->DataChannel[ch][jj] << std::endl;
-// VERBOSE
-//std::cout << "ch " << ch << " data [0] " << Event16->DataChannel[ch][1] << std::endl;
-         copied+=Event16->ChSize[ch]*sizeof(WORD); // MARIA TODO
-       }
-
-     }
-     bk_close(pevent, pidata);
-  //VERBOSE
-  //std::cout << "ev " << iev << " bank name: " << bankName<< " copied data " << copied <<  " ch size " << Event16->ChSize[0] <<  " size WORD " << sizeof(WORD) << " bk_size: " << bk_size(pevent) << std::endl;
-  }
-
-  //VERBOSE
-  //std::cout << "num ev " << NumEvents << " copied data " << copied <<  " ch size " << Event16->ChSize[0] <<  " size WORD " << sizeof(WORD) << " bk_size: " << bk_size(pevent) << std::endl;
   return bk_size(pevent); 
+
 }
 
 /*******************
@@ -861,9 +1054,9 @@ int set_relative_Threshold()
 
 	///malloc
     
-    if (!buffer) 
+    if (!auxBuffer) 
     {
-      buffer = new char [myBufferSize]; 
+      auxBuffer = new char [auxBufferSize]; 
       ret = CAEN_DGTZ_AllocateEvent(VMEhandle, (void**)&Event16);
       if (ret != CAEN_DGTZ_Success) 
       {  
@@ -892,14 +1085,14 @@ int set_relative_Threshold()
     {
 	  CAEN_DGTZ_SendSWtrigger(VMEhandle);
 
-	  ret = CAEN_DGTZ_ReadData(VMEhandle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, buffer, &BufferSize);
+	  ret = CAEN_DGTZ_ReadData(VMEhandle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, auxBuffer, &BufferSize);
 	  if (ret || BufferSize==0) 
       {
         std::cout << " error reading data after software trigger " << std::endl;
         return -1;
 	  }
 
-	  ret = CAEN_DGTZ_GetEventInfo(VMEhandle, buffer, BufferSize, 0, &EventInfo, &EventPtr); 
+	  ret = CAEN_DGTZ_GetEventInfo(VMEhandle, auxBuffer, BufferSize, 0, &EventInfo, &EventPtr); 
 	  if (ret) 
       {
         std::cout << " error in get event info " << std::endl;
@@ -946,10 +1139,6 @@ int set_relative_Threshold()
 	}
 
 	CAEN_DGTZ_ClearData(VMEhandle);
-
-    //CAEN_DGTZ_FreeReadoutBuffer(&buffer);
-    //if (buffer) {delete [] buffer; buffer = 0;}
-	//CAEN_DGTZ_FreeEvent(VMEhandle, (void**)&Event16);
 
 
    // set the threshold
