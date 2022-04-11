@@ -43,18 +43,18 @@ typedef int INT32;
 // Max event size  supported (in bytes).
 // up to 1ms per event ->
 // 1000 us * 500 S/us * 2 B/S * 16 ch = 16MB
-#define V1730_MAX_EVENT_SIZE 16000000
+//#define V1730_MAX_EVENT_SIZE 16000000
 
 // 20 us * 500 S/us * 2 B/S * 16 ch = 320KB
-//#define V1730_MAX_EVENT_SIZE 320000
+#define V1730_MAX_EVENT_SIZE 320000
 
 #define MAXEV_SINGLEREADOUT 1024
-#define MAXEVMIDASINBUFFER 50
+#define MAXEVMIDASINBUFFER 100
 
 #define MAX_CH 16
 #define CLOCK2NS 8
 // VME base address 
-DWORD V1730_BASE = 0x32100000;
+DWORD V1730_BASE = 0; // 0x32100000;
 DWORD VMEBUS_BOARDNO = 0;
 DWORD LINK = 1;
 WORD V1730EVENTID = 1;
@@ -273,8 +273,8 @@ std::cout << " polled " << std::endl;
 
   ////////////////////////
   // Open VME interface, init link board_number
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
-  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
+  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
+  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
   if (ret != CAEN_DGTZ_Success) 
   { 
     std::cout << " Error opening Digitizer. Digitizer error code: " << ret << std::endl;
@@ -308,7 +308,10 @@ std::cout << " polled " << std::endl;
 /*
   cpu_set_t mask;
   CPU_ZERO(&mask);
-  CPU_SET(0, &mask);  //Main thread to core 0
+  //CPU_SET(0, &mask);  //Main thread to core 0
+  CPU_SET(4, &mask);  //Main thread to core 0
+  CPU_SET(5, &mask);  //Main thread to core 0
+  CPU_SET(6, &mask);  //Main thread to core 0
   if( sched_setaffinity(0, sizeof(mask), &mask) < 0 )
   {
     printf("ERROR setting cpu affinity for main thread: %s\n", strerror(errno));
@@ -587,7 +590,12 @@ void * readThread(void * arg)
 /*
   cpu_set_t mask;
   CPU_ZERO(&mask);
-  CPU_SET((link + 1), &mask);
+  //CPU_SET((link + 1), &mask);
+  // TEST CFC 080422
+  CPU_SET(0, &mask);
+  CPU_SET(1, &mask);
+  CPU_SET(2, &mask);
+  CPU_SET(3, &mask);
 
   if( sched_setaffinity(0, sizeof(mask), &mask) < 0 )
   {
@@ -620,7 +628,7 @@ void * readThread(void * arg)
       if(rb_level > (int)(event_buffer_size*0.75))  // 0.75!!
       {
         // VERBOSE
-        std::cout << " buffer level " << rb_level << std::endl;
+        //std::cout << " buffer level " << rb_level << std::endl;
         continue;
       }
 
@@ -738,7 +746,8 @@ INT poll_event(INT source, INT count, BOOL test)
   if (GetNumEventsInRB() == 0) evtReady=false;
 
   if (evtReady && !test) return 1;
-  usleep(20); // MARIA TODO
+  usleep(20); // MARIA TEST CFC 080422
+  //usleep(20); // MARIA TODO
   return 0;
 
 }
