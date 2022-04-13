@@ -26,7 +26,7 @@ typedef unsigned short int UINT16;
 typedef short int INT16;
 typedef unsigned int UINT32;
 typedef int INT32;
-typedef long int INT64;
+//typedef long int INT64;
 
 #include "experim.h"
 // Max event size  supported (in bytes).
@@ -115,6 +115,7 @@ int set_relative_Threshold();
 int configure_trigger();
 
 
+BOOL equipment_common_overwrite = TRUE;
 
 //-- Equipment list ------------------------------------------------
 
