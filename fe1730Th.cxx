@@ -54,7 +54,7 @@ typedef int INT32;
 #define MAX_CH 16
 #define CLOCK2NS 8
 // VME base address 
-DWORD V1730_BASE = 0; //  0x32100000; // 0-> optical link in module
+DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
 DWORD VMEBUS_BOARDNO = 0;
 DWORD LINK = 1;
 WORD V1730EVENTID = 1;
@@ -541,6 +541,7 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   // ARM ACQUISITON
   CAEN_DGTZ_ClearData(VMEhandle);
   CAEN_DGTZ_SWStartAcquisition(VMEhandle);
+  usleep(300000); // MARIA 130422
 
   // CREATE READ THREAD
   status = pthread_create(&tid, NULL, &readThread, (void*)&thread_link);
@@ -851,6 +852,8 @@ INT readEvent(void * wp)
     {
       if (v1730_settings.ch_enable[ch])
       {
+//VERBOSE
+//std::cout << " ch " << ch << " chsize " << Event16->ChSize[ch] << " data[0]: " << Event16->DataChannel[ch][0] << std::endl;
         memcpy(pidata,Event16->DataChannel[ch], Event16->ChSize[ch]*sizeof(WORD));
         pidata += Event16->ChSize[ch]; 
         copied+=Event16->ChSize[ch]*sizeof(WORD);
