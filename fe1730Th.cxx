@@ -622,7 +622,6 @@ void * readThread(void * arg)
        * the ring buffer, as this the v1725 will generate the HW busy to the DTM.
        * MARIA TODO
        */
-/**
       rb_get_buffer_level(rb_handle, &rb_level);
 //if (verbose) std::cout << " buffer handle " << rb_handle << " level " << rb_level << std::endl;
       // VERBOSE
@@ -633,7 +632,6 @@ void * readThread(void * arg)
         //std::cout << " buffer level " << rb_level << std::endl;
         continue;
       }
-*/
 
       // Ok to read data
       // VERBOSE
