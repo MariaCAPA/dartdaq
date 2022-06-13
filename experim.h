@@ -17,11 +17,67 @@
                 tation which can be used in the db_create_record function
                 to setup an ODB structure which matches the C structure.
 
-  Created on:   Fri Apr 16 13:13:40 2021
+  Created on:   Tue Jun  7 18:08:23 2022
 
 \********************************************************************/
 
 #ifndef EXCL_V1730_DATA00
+
+#define bsl_BANK_DEFINED
+
+typedef struct {
+  float     bsl[16];
+} BSL_BANK;
+
+#define BSL_BANK_STR(_name) const char *_name[] = {\
+"[.]",\
+"bsl = FLOAT[16] :",\
+"[0] 2842.79",\
+"[1] 2826.539",\
+"[2] -8.428499e+31",\
+"[3] 4.591214e-41",\
+"[4] 0",\
+"[5] 0",\
+"[6] 1.401298e-45",\
+"[7] 0",\
+"[8] 4.445659e+34",\
+"[9] 3.075009e-41",\
+"[10] 1.121039e-44",\
+"[11] 0",\
+"[12] 0",\
+"[13] 0",\
+"[14] 0",\
+"[15] 0",\
+"",\
+NULL }
+
+#define rms_BANK_DEFINED
+
+typedef struct {
+  float     rms[16];
+} RMS_BANK;
+
+#define RMS_BANK_STR(_name) const char *_name[] = {\
+"[.]",\
+"rms = FLOAT[16] :",\
+"[0] 2488.043",\
+"[1] 2470.712",\
+"[2] 7.287124e-38",\
+"[3] 4.567672e-41",\
+"[4] 1.3778e+34",\
+"[5] 3.075009e-41",\
+"[6] 1.527908e+32",\
+"[7] 3.075009e-41",\
+"[8] 1.401298e-45",\
+"[9] 7.006492e-42",\
+"[10] 0",\
+"[11] 0",\
+"[12] 0",\
+"[13] 0",\
+"[14] 0",\
+"[15] 0",\
+"",\
+NULL }
 
 #define V1730_DATA00_COMMON_DEFINED
 
@@ -63,11 +119,11 @@ typedef struct {
 "Log history = INT32 : 0",\
 "Frontend host = STRING : [32] localhost",\
 "Frontend name = STRING : [32] fe1730",\
-"Frontend file name = STRING : [256] /home/daquser/testDart//fe1730.cxx",\
+"Frontend file name = STRING : [256] /home/daquser/dartdaq//fe1730Th.cxx",\
 "Status = STRING : [256] fe1730@localhost",\
 "Status color = STRING : [32] greenLight",\
 "Hidden = BOOL : n",\
-"Write cache size = INT32 : 100000",\
+"Write cache size = INT32 : 0",\
 "",\
 NULL }
 
@@ -90,15 +146,15 @@ typedef struct {
 
 #define V1730_DATA00_SETTINGS_STR(_name) const char *_name[] = {\
 "[.]",\
-"pulse polarity (+,-) = CHAR : -",\
+"pulse polarity (+,-) = CHAR : +",\
 "external trigger (y,n) = BOOL : n",\
-"record length (points) = UINT32 : 4000",\
-"post-trigger (%) = UINT32 : 70",\
+"record length (points) = UINT32 : 5000",\
+"post-trigger (%) = UINT32 : 80",\
 "enable channel = UINT32[16] :",\
 "[0] 1",\
 "[1] 1",\
-"[2] 1",\
-"[3] 1",\
+"[2] 0",\
+"[3] 0",\
 "[4] 0",\
 "[5] 0",\
 "[6] 0",\
@@ -112,27 +168,27 @@ typedef struct {
 "[14] 0",\
 "[15] 0",\
 "baseline position (%) = UINT32[16] :",\
-"[0] 50",\
-"[1] 70",\
+"[0] 90",\
+"[1] 90",\
 "[2] 50",\
 "[3] 50",\
-"[4] 0",\
-"[5] 0",\
-"[6] 0",\
-"[7] 0",\
-"[8] 0",\
-"[9] 0",\
-"[10] 0",\
-"[11] 0",\
-"[12] 0",\
-"[13] 0",\
-"[14] 0",\
-"[15] 0",\
+"[4] 50",\
+"[5] 50",\
+"[6] 50",\
+"[7] 50",\
+"[8] 90",\
+"[9] 10",\
+"[10] 10",\
+"[11] 50",\
+"[12] 50",\
+"[13] 50",\
+"[14] 50",\
+"[15] 50",\
 "threshold (ADC counts) = UINT32[16] :",\
-"[0] 8000",\
-"[1] 8000",\
-"[2] 200",\
-"[3] 200",\
+"[0] 200",\
+"[1] 200",\
+"[2] 0",\
+"[3] 0",\
 "[4] 0",\
 "[5] 0",\
 "[6] 0",\
@@ -164,7 +220,7 @@ typedef struct {
 "[15] 2",\
 "trg (AND,OR,NONE,ONLY0,ONLY1) = STRING[8] :",\
 "[32] AND",\
-"[32] AND",\
+"[32] NONE",\
 "[32] NONE",\
 "[32] NONE",\
 "[32] NONE",\

@@ -9,6 +9,12 @@
 using namespace std;
 const int VMEBUS_BOARDNO = 0;
 
+// MARIA 070622
+#include "midas.h"
+#include "msystem.h"
+HNDLE hDB;
+
+
 TEventProcessor* TEventProcessor::s_instance = 0;
 std::vector<double> TEventProcessor::tini;
 
@@ -17,6 +23,13 @@ TEventProcessor* TEventProcessor::instance()
   if (!s_instance)
   {
     s_instance = new TEventProcessor();
+
+    // MARIA 070622
+    int status = cm_get_experiment_database(&hDB, NULL);
+    if (status != CM_SUCCESS) 
+    {
+      hDB =0;
+    }
 
   }
 
@@ -64,11 +77,32 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   int nCh =  V1730->GetNChannels();
 
   // loop in channels
+  float bsl[16]; // MARIA 070622
+  float rms[16]; // MARIA 070622
   for (int i=0; i<nCh; i++) 
   {
+    // MARIA 070622
+    bsl[i]=0;
+    rms[i]=0;
     int theCh = V1730->GetChannelData(i).GetChannelNumber();
-    if (IsDart(theCh)) AnalyzeDartChannel(V1730->GetChannelData(i));
-    else AnalyzeVetoChannel(V1730->GetChannelData(i));
+    if (IsDart(theCh)) 
+    {
+      AnalyzeDartChannel(V1730->GetChannelData(i));
+      bsl[i]=fDartEvent->dartChannel[i].bsl;
+      rms[i]=fDartEvent->dartChannel[i].rms;
+    }
+    else 
+    {
+      AnalyzeVetoChannel(V1730->GetChannelData(i));
+      bsl[i]=fDartEvent->vetoChannel[i].Vbsl;
+      rms[i]=fDartEvent->vetoChannel[i].Vrms;
+    }
+  }
+  // MARIA 070622 TODO !! write in DB to read it in history
+  if (hDB) 
+  {
+    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/bsl/bsl", bsl, 16*sizeof(float), 16, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/rms/rms", rms, 16*sizeof(float), 16, TID_FLOAT);
   }
 
   fDartEvent->vetoMult = fDartEvent->vetoChannel.size();
@@ -94,6 +128,7 @@ int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
   TDartEvent::TDartCh dch;
   GetBasicParam(channelData, dch.bsl, dch.bmax, dch.bmaxp, dch.bmin, dch.bminp, dch.bimax, dch.rms, dch.max, dch.t0, dch.tMax, dch.charge, dch.min, dch.tMin);
   dch.ch=channelData.GetChannelNumber();
+
 
   int nSamples = channelData.GetNSamples();
   ////////////////////
