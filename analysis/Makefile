@@ -14,7 +14,7 @@ ifndef ROOTANASYS
 ROOTANASYS=../../rootana
 endif
 
-CXXFLAGS += -I$(ROOTANASYS)/include
+INCFLAGS = -I$(ROOTANASYS)/include
 LIBS += -L$(ROOTANASYS)/lib -lrootana
 
 # ROOT libraries
@@ -73,27 +73,28 @@ all: $(OBJS) wfViewer.exe midas2root.exe wfAverage.exe dartlib.so
 lib: dartlib.so
 
 wfViewer.exe: wfViewer.cxx TDartEventDict.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 wfAverage.exe: wfAverage.cxx TDartEventDict.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 midas2root.exe: midas2root.cxx TDartEventDict.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 %Dict.o: %Dict.cxx
-	$(CXX) -o $@ $(CXXFLAGS) -c -I. $<
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) -c -I. $<
 
 %Dict.cxx: TV1730Waveform.hxx TDartAnaManager.hxx  TDartReadRun.hxx TDartVisu.hxx
-	rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx $^ $*_LinkDef.h
+	#rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx $^ $*_LinkDef.h
+	rootcint -f $@ -c -I. $(INCFLAGS) $*.hxx $^ $*_LinkDef.h
 
 %.o: %.cxx
-	$(CXX) -o $@ $(CXXFLAGS) -c $<
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) -c $<
 
 #dartlib.so: TDartEventDict.cxx TDartEvent.hxx 
 dartlib.so: *.cxx *.hxx
-	$(CXX) $(CXXFLAGS) -shared -o $@  TDartEventDict.cxx $(OBJS) $(LIBS) $(ROOTGLIBS) 
-	#$(CXX) $(CXXFLAGS) -shared -o $@  $^
+	$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  TDartEventDict.cxx $(OBJS) $(LIBS) $(ROOTGLIBS) 
+	#$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  $^
 
 
 
