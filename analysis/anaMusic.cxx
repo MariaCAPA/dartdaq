@@ -45,11 +45,10 @@ int main(int argc, char *argv[])
 	pre = preAnaMusic(argv[1],argv[2],tFix,tWin);
 
 	std::cout << tFix << "	" << tWin << std::endl;
-  
-  tFix=50;
-  tWin=70;
 
 	if(pre == -1) return -1;
+        //tFix = 475;
+        //tWin = 225;
 
 	int cal = 1;
 
@@ -385,8 +384,26 @@ int main(int argc, char *argv[])
         double tWin_mod6;
         double tWin_mod7;
         
+        //FWHM
+        double FWHM0;
+        double FWHM1;
+        double FWHM2;
+        double FWHM3;
+        double FWHM4;
+        double FWHM5;
+        double FWHM6;
+        double FWHM7;
+        
         //Pulsos
         TH1F *pulse0 = new TH1F("pulse0","pulse0",nSamples,0,nSamples);
+        TH1F *pulse1 = new TH1F("pulse1","pulse1",nSamples,0,nSamples);
+        TH1F *pulse2 = new TH1F("pulse2","pulse2",nSamples,0,nSamples);
+        TH1F *pulse3 = new TH1F("pulse3","pulse3",nSamples,0,nSamples);
+        TH1F *pulse4 = new TH1F("pulse4","pulse4",nSamples,0,nSamples);
+        TH1F *pulse5 = new TH1F("pulse5","pulse5",nSamples,0,nSamples);
+        TH1F *pulse6 = new TH1F("pulse6","pulse6",nSamples,0,nSamples);
+        TH1F *pulse7 = new TH1F("pulse7","pulse7",nSamples,0,nSamples);
+
 
         double areaPreTrigger;
 
@@ -416,7 +433,7 @@ int main(int argc, char *argv[])
         double * rmsPrev = new double [8];
 
         double * t0 = new double [8];
-        double * tmax = new double [8];
+        double * tmax = new double [8];        t2->Branch("pulse0","TH1F",&pulse0,32000,0);
         double * dt = new double [8];
         double * area = new double [8];
         double * areaFix = new double [8];
@@ -432,7 +449,9 @@ int main(int argc, char *argv[])
         double *P2 = new double [8];
         double *tFix_mod = new double [8];
         double *tWin_mod = new double [8];
+        double *FWHM= new double [8];
 
+	
         double * p = new double [8];
 
         double highTot;
@@ -702,8 +721,25 @@ int main(int argc, char *argv[])
         t2->Branch("tWin_mod6",&tWin_mod6,"&tWin_mod6/D");
         t2->Branch("tWin_mod7",&tWin_mod7,"&tWin_mod7/D");
         
+        //FWHM
+        t2->Branch("FWHM0",&FWHM0,"&FWHM0/D");
+        t2->Branch("FWHM1",&FWHM1,"&FWHM1/D");
+        t2->Branch("FWHM2",&FWHM2,"&FWHM2/D");
+        t2->Branch("FWHM3",&FWHM3,"&FWHM3/D");
+        t2->Branch("FWHM4",&FWHM4,"&FWHM4/D");
+        t2->Branch("FWHM5",&FWHM5,"&FWHM5/D");
+        t2->Branch("FWHM6",&FWHM6,"&FWHM6/D");
+        t2->Branch("FWHM7",&FWHM7,"&FWHM7/D");
+        
         //Pulsos
         t2->Branch("pulse0","TH1F",&pulse0,32000,0);
+	t2->Branch("pulse1","TH1F",&pulse1,32000,0);
+	t2->Branch("pulse2","TH1F",&pulse2,32000,0);
+	t2->Branch("pulse3","TH1F",&pulse3,32000,0);
+        t2->Branch("pulse4","TH1F",&pulse4,32000,0);
+        t2->Branch("pulse5","TH1F",&pulse5,32000,0);
+        t2->Branch("pulse6","TH1F",&pulse6,32000,0);
+        t2->Branch("pulse7","TH1F",&pulse7,32000,0);	
 
         t2->Branch("bslTot",&bslTot,"bslTot/D");
         t2->Branch("bslTotF",&bslTotF,"bslTotF/D");
@@ -718,6 +754,7 @@ int main(int argc, char *argv[])
         t2->Branch("areaP",&areaP,"areaP/D");
         t2->Branch("areaTotFix",&areaTotFix,"areaTotFix/D");
         t2->Branch("nTot",&nTot,"nTot/D");
+
         t2->Branch("nTotFix",&nTotFix,"nTotFix/D");
         t2->Branch("areaPreTrigger",&areaPreTrigger,"areaPreTrigger/D");
         t2->Branch("areaTotMax",&areaTotMax,"areaTotMax/D");
@@ -792,7 +829,7 @@ int main(int argc, char *argv[])
                 t0Tot = nSamples + 1;
 
 		TEventMusic evMusic;
-		evMusic.ProcessMusicEvent(V1730, config, aqCh, calSl, bslX, rmsX, area, areaFix, n, nFix, high, t0, tmax, areaTot, nTot, areaTotFix, nTotFix, areaTotWindow, nTotWindow, max, mu, mu_tot, n_peak, P1, P2, pulse0, tFix_mod, tWin_mod, n_peak_tot);
+		evMusic.ProcessMusicEvent(V1730, config, aqCh, calSl, bslX, rmsX, area, areaFix, n, nFix, high, t0, tmax, areaTot, nTot, areaTotFix, nTotFix, areaTotWindow, nTotWindow, max, mu, mu_tot, n_peak, P1, P2, pulse0, pulse1, pulse2, pulse3, pulse4, pulse5, pulse6, pulse7, tFix_mod, tWin_mod, n_peak_tot, FWHM);
 
 //		std::cout << areaTotWindow << std::endl;
 
@@ -1048,6 +1085,16 @@ int main(int argc, char *argv[])
                 P26 = P2[6];
                 P27 = P2[7];
                 
+                //FWHM
+                FWHM0 = FWHM[0];
+                FWHM1 = FWHM[1];
+                FWHM2 = FWHM[2];
+                FWHM3 = FWHM[3];
+                FWHM4 = FWHM[4];
+                FWHM5 = FWHM[5];
+                FWHM6 = FWHM[6];
+                FWHM7 = FWHM[7];
+                
                 //Tiempos de integracion
                 tFix_mod0 = tFix_mod[0];
                 tFix_mod1 = tFix_mod[1];
@@ -1066,7 +1113,7 @@ int main(int argc, char *argv[])
                 tWin_mod5 = tWin_mod[5];
                 tWin_mod6 = tWin_mod[6];
                 tWin_mod7 = tWin_mod[7];
-                
+
 /*
 		for(k = 0; k < 8; k++) std::cout << areaFix[k] << "	";
 		std::cout << std::endl;
@@ -1192,7 +1239,7 @@ int preAnaMusic(char *charNew, char *charConfig, int &tIni, int &tWin)
         std::cout << "tFix = " << tFix << "     tWin = " << tWin << std::endl;
         std::cout << "nCh = " << nCh << std::endl;
 
-        int sRate = 500*1e6;
+        int sRate = 250*1e6;
 
         double tBin = 1.0*1e9/sRate;
 /*
@@ -1251,7 +1298,8 @@ int preAnaMusic(char *charNew, char *charConfig, int &tIni, int &tWin)
                         {
                                 TV1730RawChannel channelData = V1730->GetChannelData(j);
                                 nSamples = channelData.GetNSamples();
-                                for(i = 0; i < nSamples; i++) hP[j]->SetBinContent(i+1,-1.0*channelData.GetADCSample(i));
+                                //for(i = 0; i < nSamples; i++) hP[j]->SetBinContent(i+1,-1.0*channelData.GetADCSample(i));
+                                for(i = 0; i < nSamples; i++) hP[j]->SetBinContent(i+1,1.0*channelData.GetADCSample(i));
                                 contCh++;
                         }
                 }
@@ -1309,7 +1357,8 @@ int preAnaMusic(char *charNew, char *charConfig, int &tIni, int &tWin)
                         {
                                 TV1730RawChannel channelData = V1730->GetChannelData(j);
                                 nSamples = channelData.GetNSamples();
-                                for(i = 0; i < nSamples; i++) hP[j]->SetBinContent(i+1,-1.0*channelData.GetADCSample(i));
+                                //for(i = 0; i < nSamples; i++) hP[j]->SetBinContent(i+1,-1.0*channelData.GetADCSample(i));
+                                for(i = 0; i < nSamples; i++) hP[j]->SetBinContent(i+1,1.0*channelData.GetADCSample(i));
                                 contCh++;
                         }
                 }
@@ -1521,7 +1570,7 @@ double calAnaMusic (TTree *pulses, const char *File_name) //Añadido para la cali
     	line->Draw("same"); //Para dibujar la línea
     }
     
-    c1->SaveAs(Form("heigh_cuts_%s.png",File_name));
+    //c1->SaveAs(Form("heigh_cuts_%s.png",File_name));
     
     //Calibración en altura (usamos corte n_peak0==1)
     TCanvas *c4 = new TCanvas("c4","The Graph example",10,10,700,500);
@@ -1563,7 +1612,7 @@ double calAnaMusic (TTree *pulses, const char *File_name) //Añadido para la cali
     
     pv1->Draw("same");
     
-    c4->SaveAs(Form("heigh_calibration_%s.png",File_name));
+    //c4->SaveAs(Form("heigh_calibration_%s.png",File_name));
 
     //Distribuciones phe en area
     TH1F * one_phe = new TH1F("one_phe", "1 phe",area_nbins,area_min,area_max);
@@ -1595,7 +1644,7 @@ double calAnaMusic (TTree *pulses, const char *File_name) //Añadido para la cali
 
     legend->Draw("same");
     
-    c2->SaveAs(Form("area_phe_%s.png",File_name));
+    //c2->SaveAs(Form("area_phe_%s.png",File_name));
     
     //Area spectrum comparison
     TCanvas *c5 = new TCanvas("c5","The Graph example",10,10,700,500);
@@ -1615,7 +1664,7 @@ double calAnaMusic (TTree *pulses, const char *File_name) //Añadido para la cali
     
     legend2->Draw("same");
     
-    c5->SaveAs(Form("area_cuts_comparison_%s.png",File_name));
+    //c5->SaveAs(Form("area_cuts_comparison_%s.png",File_name));
     
     TCanvas *c3 = new TCanvas("c3","The Graph example",10,10,700,500);
     
@@ -1653,7 +1702,7 @@ double calAnaMusic (TTree *pulses, const char *File_name) //Añadido para la cali
     
     pv->Draw("same");
     
-    c3->SaveAs(Form("area_calibration_%s.png",File_name));
+    //c3->SaveAs(Form("area_calibration_%s.png",File_name));
 
     double phe_calibration, phe_calibration_error;
 

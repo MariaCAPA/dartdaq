@@ -120,8 +120,9 @@ bool TEventProcessor::IsDart(int ch)
 {
   // TODO READ FROM DB
   // BY NOW, DART CHANNELS ARE 0 & 1
-  if (ch==0 || ch==1) return true;
-  return false;
+  //if (ch==0 || ch==1) return true;
+  // MARIA 240523 all dart channels
+  return true;
 }
 int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
 {

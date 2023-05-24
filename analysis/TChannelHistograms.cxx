@@ -46,7 +46,8 @@ void THistoCharges::CreateHistograms()
  
       sprintf(title,"Histo Charge channel=%i",i);
       
-      TH1D *tmp = new TH1D(name, title, 5000, 0,500000);
+      //TH1D *tmp = new TH1D(name, title, 5000, 0,500000);
+      TH1D *tmp = new TH1D(name, title, 1000, 0,5000);
       tmp->SetXTitle("Charge (ADC*sample value)");
       tmp->SetYTitle("Counts");
       
@@ -56,6 +57,7 @@ void THistoCharges::CreateHistograms()
 void THistoCharges::UpdateHistograms(TDataContainer& dataContainer)
 {
   TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
+  // std::cout << dev->dartChannel[0].charge << std::endl;
 
   for(unsigned int i = 0; i < dev->dartChannel.size(); i++)
   {

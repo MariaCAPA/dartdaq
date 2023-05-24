@@ -14,7 +14,7 @@ const int VMEBUS_BOARDNO = 0;
 #include "midas.h"
 #include "msystem.h"
 
-void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *aqCh, double *calSl, double *bsl, double *rms, double *area, double *areaFix, double *n, double *nFix, double *high, double *t0, double *tmax, double &areaTot, double &nTot, double &areaTotFix, double &nTotFix, double &areaTotWindow, double &nTotWindow, double *max, double *mu, double *mu_tot, double *n_peak, double *P1, double *P2, TH1F *pulse, double *tFix_mod, double *tWin_mod, double *n_peak_tot)
+void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *aqCh, double *calSl, double *bsl, double *rms, double *area, double *areaFix, double *n, double *nFix, double *high, double *t0, double *tmax, double &areaTot, double &nTot, double &areaTotFix, double &nTotFix, double &areaTotWindow, double &nTotWindow, double *max, double *mu, double *mu_tot, double *n_peak, double *P1, double *P2, TH1F *pulse0, TH1F *pulse1, TH1F *pulse2, TH1F *pulse3, TH1F *pulse4, TH1F *pulse5, TH1F *pulse6, TH1F *pulse7, double *tFix_mod, double *tWin_mod, double *n_peak_tot, double *FWHM)
 {
 
 	int cal = config[0];
@@ -34,6 +34,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
   int maxbin, bin;
   double maxheigh, heighlimit, heigh; //heighlimit se pondra como el 1% de maxheigh
   int tmin, tmaxaux, tMaxI;
+
 /*  
   tMaxI=tFix+tWin; //El limite superior de integracion inicial
   
@@ -71,9 +72,9 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
   
   tWin=tMaxI-tFix;
 */  
+  //P27
   //
-  //
-  //
+  //#include "TEventMusic.hxx"
 
         double rmsMin, bslCambiante, rmsCambiante, bslRmsMin, trig;
 	double bslTot, bslTotF, rmsTot, rmsTotF;
@@ -87,6 +88,8 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
   double bin_time_mu=0;
   
   double media_ant=0, media=0, control=0, control_ant=0, rms_peak=0;
+  
+  double left_bin, right_bin;
 
 	nTot = 0;
 	areaTot = 0;
@@ -99,13 +102,21 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
         {
 
 		hAux->Reset();
-    if(j==0) pulse->Reset();
+    if(j==0) pulse0->Reset();
+    if(j==1) pulse1->Reset();
+    if(j==2) pulse2->Reset();
+    if(j==3) pulse3->Reset();
+    if(j==4) pulse4->Reset();
+    if(j==5) pulse5->Reset();
+    if(j==6) pulse6->Reset();
+    if(j==7) pulse7->Reset();
 
                 if(aqCh[j] == 1)
                 {
                         TV1730RawChannel channelData = V1730->GetChannelData(j);
                         nSamples = channelData.GetNSamples();
-                        for(i = 0; i < nSamples; i++) hAux->SetBinContent(i+1,-1.0*channelData.GetADCSample(i));
+                        //for(i = 0; i < nSamples; i++) hAux->SetBinContent(i+1,-1.0*channelData.GetADCSample(i));
+                        for(i = 0; i < nSamples; i++) hAux->SetBinContent(i+1,1.0*channelData.GetADCSample(i));
                 }
 
                 if(aqCh[j] == 1) for(i = 2; i <= nSamples; i++) hAux->SetBinContent(i,hAux->GetBinContent(i-1)+0.5*(hAux->GetBinContent(i)-hAux->GetBinContent(i-1)));
@@ -140,19 +151,20 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 }
 
                 bsl[j] = bslRmsMin;
+                
                 rms[j] = rmsMin;
-/*
+                
 
-                for(k = 0; k < nPtsBsl; k++) bslTot += hAux->GetBinContent(k+1)/nPtsBsl;
-                for(k = 0; k < nPtsBsl; k++) bslTotF += hAux->GetBinContent(nSamples-k)/nPtsBsl;
+               /* for(k = 0; k < nPtsBsl; k++) bslTot += hAux->GetBinContent(k+1)/nPtsBsl;
+                for(k = 0; k < nPtsBsl; k++) bslTotF += hAux->GetBinContent(nPtsBsl+k+1)/nPtsBsl;
                 for(k = 0; k < nPtsBsl; k++) rmsTot += (hAux->GetBinContent(k+1)-bslTot)*(hAux->GetBinContent(k+1)-bslTot)/nPtsBsl;
-                for(k = 0; k < nPtsBsl; k++) rmsTotF += (hAux->GetBinContent(nSamples-k)-bslTotF)*(hAux->GetBinContent(nSamples-k)-bslTotF)/nPtsBsl;
+                for(k = 0; k < nPtsBsl; k++) rmsTotF += (hAux->GetBinContent(nPtsBsl+k+1)-bslTotF)*(hAux->GetBinContent(nPtsBsl+k+1)-bslTotF)/nPtsBsl;
                 rmsTot = sqrt(rmsTot);
                 rmsTotF = sqrt(rmsTotF);
 
 		if(bslTot > bslTotF) {bsl[j] = bslTot; rms[j] = rmsTot;}
-		else {bsl[j] = bslTotF; rms[j] = rmsTotF;}
-*/
+		else {bsl[j] = bslTotF; rms[j] = rmsTotF;}*/
+
                 for(k = 0; k < nSamples; k++) hAux->SetBinContent(k+1,hAux->GetBinContent(k+1)-bsl[j]);
 
                 trig = 5*rms[j];
@@ -174,7 +186,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
 
   tMaxI=tFix+tWin; //El limite superior de integracion inicial
   
-  hAux->GetXaxis()->SetRangeUser(tFix,tFix+tWin);
+  /*hAux->GetXaxis()->SetRangeUser(tFix,tFix+tWin);
   maxbin=hAux->GetMaximumBin();
   hAux->GetXaxis()->SetRangeUser(0,nSamples);
   
@@ -203,7 +215,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
     bin++;
   }
   
-  tmaxaux=bin-1;
+  tmaxaux=bin-1;*/
   
   //if(tmin>tFix) tFix=tmin;
   
@@ -218,16 +230,16 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 for(k = tFix; k < tFix + tWin; k++) areaFix[j] += hAux->GetBinContent(k)/amp;
                 
                 //Calculo del tiempo promedio en ventana de integracion
-                for(k = tFix; k < tFix + tWin; k++) bin_time_mu += hAux->GetBinContent(k)/amp*k;
-                mu[j]=bin_time_mu/areaFix[j]-tFix; //Se da en bines
+                /*for(k = tFix; k < tFix + tWin; k++) bin_time_mu += hAux->GetBinContent(k)/amp*k;
+                mu[j]=bin_time_mu/areaFix[j]-tFix; //Se da en bines*/
                 
                 bin_time_mu=0;
                 
                 //Tiempo promedio del pulso total
-                mu_tot[j]=hAux->GetMean();
+                //mu_tot[j]=hAux->GetMean();
                 
                 //Busqueda del numero de picos
-                for(m=0; m<=(tWin)/3.; m++)
+               /* for(m=0; m<=(tWin)/3.; m++)
                 {
                 	media_ant=media;
                 	media=0;
@@ -252,13 +264,13 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 		 if(hAux->GetMaximum()>(5*rms[j])) n_peak[j]++;
                      hAux->GetXaxis()->SetRangeUser(0,nSamples);
                 		}
-                }
+                }*/
                 
                 media=0;
                 control=0;
                 
                 //En todo el pulso
-                for(m=0; m<=(nSamples)/3.; m++)
+                /*for(m=0; m<=(nSamples)/3.; m++)
                 {
                 	media_ant=media;
                 	media=0;
@@ -284,19 +296,43 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 		 if(hAux->GetMaximum()>(5*rms[j])) n_peak_tot[j]++;
                      hAux->GetXaxis()->SetRangeUser(0,nSamples);
                 		}
-                }
-                
+                }*/
+      
                 //Fin busqueda del numero de picos
                 
                 //Calculo P1 y P2
-                P1[j]=hAux->Integral(tFix+10,tFix+60)/hAux->Integral(tFix,tFix+60);
-                P2[j]=hAux->Integral(tFix,tFix+5)/hAux->Integral(tFix,tFix+60);
+                /*P1[j]=hAux->Integral(t0[j]+25,tFix+150)/hAux->Integral(t0[j],tFix+150);
+                P2[j]=hAux->Integral(t0[j],t0[j]+12)/hAux->Integral(t0[j],tFix+150);*/
                 
-                //Guardo el pulso
-                if(j==0) pulse->Add(hAux);
+                //Calculo FWHM
+                /*hAux->GetXaxis()->SetRangeUser(tFix,tFix+tWin);
+                for(k=hAux->GetMaximumBin(); k>0; k--)
+                    if(hAux->GetBinContent(k)<hAux->GetMaximum()/2.){left_bin=k; break;}
+                    
+                for(k=hAux->GetMaximumBin(); k<nSamples; k++)
+                    if(hAux->GetBinContent(k)<hAux->GetMaximum()/2.){right_bin=k; break;}
+                    
+                hAux->GetXaxis()->SetRangeUser(0,nSamples);
+                
+                FWHM[j]=(right_bin-left_bin);*/
+                
+                //Guardo los pulsos
+                if(j==0) pulse0->Add(hAux);
+                if(j==1) pulse1->Add(hAux);
+                if(j==2) pulse2->Add(hAux);
+                if(j==3) pulse3->Add(hAux);
+                if(j==4) pulse4->Add(hAux);
+                if(j==5) pulse5->Add(hAux);
+                if(j==6) pulse6->Add(hAux);
+                if(j==7) pulse7->Add(hAux);
 
-                for(k = tFix; k < tFix + tWin; k++) if(hAux->GetBinContent(k)/amp > high[j]) {high[j] = hAux->GetBinContent(k)/amp; tmax[j] = 2*k;}
 
+                //for(k = tFix; k < tFix + tWin; k++) if(hAux->GetBinContent(k)/amp > high[j]) {high[j] = hAux->GetBinContent(k)/amp; tmax[j] = 4*k;}
+		hAux->GetXaxis()->SetRangeUser(tFix,tFix+tWin);
+		high[j]=hAux->GetMaximum();
+                tmax[j]=hAux->GetMaximumBin()*4;
+		hAux->GetXaxis()->SetRangeUser(0,nSamples);
+		
                 nFix[j] = areaFix[j]/calSl[j];
                 nTotFix += nFix[j];
 
