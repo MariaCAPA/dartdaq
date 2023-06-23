@@ -1,5 +1,5 @@
-#ifndef __DART_VISU__H__
-#define __DART_VISU__H__
+#ifndef __A_VISU__H__
+#define __A_VISU__H__
 
 #include <string>
 #include <vector>
@@ -7,24 +7,24 @@
 class TChain;
 class TH1;
 class TV1730Waveform;
-class TDartEvent;
+class TAEvent;
 
-//TChain * readDartRun(int run, std::string baseName="output");
+//TChain * readARun(int run, std::string baseName="output");
 //TV1730Waveform *GetWaveform(std::string fname, int evNo);
 class TV1730WaveformM;
 class TDataContainer;
 class TV1730RawData;
 
-class TDartVisu: public TRootanaDisplay {
+class TAVisu: public TRootanaDisplay {
 public:
   // An analysis manager.  Define and fill histograms in
   // analysis manager.
   TV1730Waveform* fWf;
-  TDartEvent * fCurrentEv;
+  TAEvent * fCurrentEv;
 
-  TDartVisu();
+  TAVisu();
   void AddAllCanvases() ;
-  virtual ~TDartVisu() {};
+  virtual ~TAVisu() {};
   void ResetHistograms(){}
   void UpdateHistograms(TDataContainer& dataContainer);
   void UpdateHistograms(TV1730RawData * V1730);

@@ -1,15 +1,15 @@
-#ifndef __DART_UTILS__H__
-#define __DART_UTILS__H__
+#ifndef __A_UTILS__H__
+#define __A_UTILS__H__
 
 #include <string>
 #include <vector>
 
 class TChain;
-class TDartEvent;
+class TAEvent;
 class TV1730Waveform;
 class TMReaderInterface;
 
-class TDartReadRun
+class TAReadRun
 {
 public:
   TMReaderInterface* fReader;
@@ -17,11 +17,11 @@ public:
   std::string fDataBaseName;
   int fRun;
   TChain * fTree;
-  TDartEvent * fCurrentEv;
+  TAEvent * fCurrentEv;
   std::vector<int> fSelectedEvents;
 
-  TDartReadRun(int run, std::string rootBasename="output", std::string dataBaseName="/storage/online/run");
-  virtual ~TDartReadRun() {};
+  TAReadRun(int run, std::string rootBasename="output", std::string dataBaseName="/storage/online/run");
+  virtual ~TAReadRun() {};
   TV1730Waveform *GetWaveform(int evNo, bool draw=true, bool dump=true);
   // Maria 240322 this auxiliar function contains the original code, 
   // when the midas event contain only one waveform per channel

@@ -1,20 +1,20 @@
-#include "TDartAnaManager.hxx"
+#include "TAAnaManager.hxx"
 #include "TChannelHistograms.hxx"
 
-TDartAnaManager::TDartAnaManager()
+TAAnaManager::TAAnaManager()
 {
  //AddHistogram(new TEvaluationHistograms());
 
   fVXhisto = new TV1730Waveform();
 
   AddHistogram(fVXhisto);
-  AddHistogram(new THistoCharges);
+  AddHistogram(new THistoArea);
   AddHistogram(new THistoHigh);
-  AddHistogram(new THistoChargeSummary);
+  AddHistogram(new THistoAreaSummary);
 };
 
 
-void TDartAnaManager::AddHistogram(THistogramArrayBase* histo) {
+void TAAnaManager::AddHistogram(THistogramArrayBase* histo) {
   histo->DisableAutoUpdate();
   fHistos.push_back(histo);
 }
@@ -27,7 +27,7 @@ bool dir_exists(MVOdb* odb, const char* dir_name) {
   return odb->Chdir(dir_name, false) != NULL;
 }
 
-void TDartAnaManager::BeginRun(int transition,int run,int time, MVOdb* odb) {
+void TAAnaManager::BeginRun(int transition,int run,int time, MVOdb* odb) {
   bool using_groups = false;
 
   std::vector<int> group_idxs;
@@ -115,10 +115,10 @@ void TDartAnaManager::BeginRun(int transition,int run,int time, MVOdb* odb) {
   //fVXhisto->SetNumBoardsPerFrontend(num_boards_per_fe);
 }
 
-int TDartAnaManager::ProcessMidasEvent(TDataContainer& dataContainer)
+int TAAnaManager::ProcessMidasEvent(TDataContainer& dataContainer)
 {
 
-  TEventProcessor::instance()->ProcessMidasEvent(dataContainer);  // DartEvent accesible for all histos
+  TEventProcessor::instance()->ProcessMidasEvent(dataContainer);  // AEvent accesible for all histos
   // Fill all the  histograms
   for (unsigned int i = 0; i < fHistos.size(); i++) {
     // Some histograms are very time-consuming to draw, so we can
@@ -135,7 +135,7 @@ int TDartAnaManager::ProcessMidasEvent(TDataContainer& dataContainer)
 // Little trick; we only fill the transient histograms here (not cumulative), since we don't want
 // to fill histograms for events that we are not displaying.
 // It is pretty slow to fill histograms for each event.
-void TDartAnaManager::UpdateTransientPlots(TDataContainer& dataContainer){
+void TAAnaManager::UpdateTransientPlots(TDataContainer& dataContainer){
   std::vector<THistogramArrayBase*> histos = GetHistograms();
 
   for (unsigned int i = 0; i < histos.size(); i++) {

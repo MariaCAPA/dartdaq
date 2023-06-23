@@ -1,4 +1,4 @@
-#include "TDartReadRun.hxx"
+#include "TAReadRun.hxx"
 #include "TV1730Waveform.hxx"
 #include <iostream>
 #include "midasio.h"
@@ -14,15 +14,15 @@
 
 #include "TFancyHistogramCanvas.hxx"
 #include "TTree.h"
-#include "TDartVisu.hxx"
+#include "TAVisu.hxx"
 
 // Maria 240322 
 // original Get waveform function when the midas event contain just a waveform per channel
 // untill the software buffer is implemented, use the other implementation,
 // and keep this as GetWaveformAuxiliar
-TV1730Waveform *TDartReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump)
+TV1730Waveform *TAReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump)
 {
-  TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  TAVisu & visu = (TAVisu&)(TAVisu::Get());
   //manager.AddHistogram(wf);
   //display.AddSingleCanvas(wf->CreateCanvas(), wf->GetTabName());
 
@@ -75,9 +75,9 @@ TV1730Waveform *TDartReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump
 // every midas event will contain only one waveform per channel, 
 // so I can come back to GetWaveform function, that for now is in 
 // GetWaveformAuxiliar
-TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
+TV1730Waveform *TAReadRun::GetWaveform(int evNo, bool draw, bool dump)
 {
-  TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  TAVisu & visu = (TAVisu&)(TAVisu::Get());
   //manager.AddHistogram(wf);
   //display.AddSingleCanvas(wf->CreateCanvas(), wf->GetTabName());
 
@@ -153,11 +153,11 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
 }
 
 
-TDartReadRun::TDartReadRun(int run, std::string rootBaseName, std::string dataBaseName)
+TAReadRun::TAReadRun(int run, std::string rootBaseName, std::string dataBaseName)
 {
-  TDartVisu::CreateSingleton<TDartVisu>();
-   TDartVisu::Get().InitializeRAD();
-  //TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  TAVisu::CreateSingleton<TAVisu>();
+   TAVisu::Get().InitializeRAD();
+  //TAVisu & visu = (TAVisu&)(TAVisu::Get());
   fRootBaseName=rootBaseName;
   fDataBaseName=dataBaseName;
 
@@ -175,10 +175,10 @@ TDartReadRun::TDartReadRun(int run, std::string rootBaseName, std::string dataBa
   }
   fTree->SetEstimate(fTree->GetEntries());
   
-  fTree->SetBranchAddress("DartEvent",&fCurrentEv);
+  fTree->SetBranchAddress("AEvent",&fCurrentEv);
 }
 
-TV1730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index, bool draw, bool dump)
+TV1730Waveform *TAReadRun::GetWaveformFromSelectedEvents(int index, bool draw, bool dump)
 {
   if ((unsigned int)index<fSelectedEvents.size())
   return GetWaveform(fSelectedEvents[index], draw, dump);
@@ -188,7 +188,7 @@ TV1730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index, bool draw
 }
 
 
-int TDartReadRun::SetSelection (std::string cut)
+int TAReadRun::SetSelection (std::string cut)
 {
   fSelectedEvents.clear();
   int nsel = fTree->Draw("Entry$", cut.c_str(), "goff"); // this function returns ~2 more events that actually pass the cuts
@@ -197,11 +197,11 @@ int TDartReadRun::SetSelection (std::string cut)
   return nsel;
 }
 
-TV1730Waveform *TDartReadRun::GetAverageFromSelectedEvents(bool draw, bool dump)
+TV1730Waveform *TAReadRun::GetAverageFromSelectedEvents(bool draw, bool dump)
 {
   TV1730Waveform * average = new TV1730Waveform("average");
 
-  TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
+  TAVisu & visu = (TAVisu&)(TAVisu::Get());
   TMidasEvent event;
 
   if (fReader) delete fReader; 

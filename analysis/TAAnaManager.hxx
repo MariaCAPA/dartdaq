@@ -1,5 +1,5 @@
-#ifndef TDartAnaManager_h
-#define TDartAnaManager_h
+#ifndef TAAnaManager_h
+#define TAAnaManager_h
 
 // Use this list here to decide which type of equipment to use.
 
@@ -8,10 +8,10 @@
 #include "mvodb.h"
 
 // manager class; holds different set of his
-class TDartAnaManager  {
+class TAAnaManager  {
 public:
-  TDartAnaManager();
-  virtual ~TDartAnaManager(){};
+  TAAnaManager();
+  virtual ~TAAnaManager(){};
 
   /// Processes the midas event, fills histograms, etc.
   int ProcessMidasEvent(TDataContainer& dataContainer);

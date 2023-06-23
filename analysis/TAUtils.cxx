@@ -1,10 +1,10 @@
-#include "TDartUtils.hxx"
+#include "TAUtils.hxx"
 #include <iostream>
 
 #include <TChain.h>
 
 
-TChain * readDartRun(int run, std::string baseName)
+TChain * readARun(int run, std::string baseName)
 {
   TChain * t = new TChain("td");
   int maxPartial = 99;
@@ -18,7 +18,7 @@ TChain * readDartRun(int run, std::string baseName)
   }
 
   t->SetEstimate(t->GetEntries());
-  std::cout << " to visualize and event do TDartEvent * ev; t->SetBranchAddress(\"DartEvent\",&ev); t->GetEntry(i); ev->Dump(); " << std::endl;
+  std::cout << " to visualize and event do TAEvent * ev; t->SetBranchAddress(\"AEvent\",&ev); t->GetEntry(i); ev->Dump(); " << std::endl;
   return t;
 }
 
