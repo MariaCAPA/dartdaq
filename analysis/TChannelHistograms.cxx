@@ -11,22 +11,22 @@ const int numberChannelPerModule = 16;
 
 /////////////////////// HISTO CHARGES
 
-THistoCharges::THistoCharges(){
+THistoArea::THistoArea(){
 
-  SetTabName("Charge");
-  SetSubTabName("Channel Charge ");
+  SetTabName("Area");
+  SetSubTabName("Channel Area ");
   SetNumberChannelsInGroup(numberChannelPerModule);
   CreateHistograms();
 
 }
 
-void THistoCharges::CreateHistograms()
+void THistoArea::CreateHistograms()
 {
 
   // check if we already have histogramss.
   if(size() != 0){
     char tname[100];
-    sprintf(tname,"HistoCharge_0");
+    sprintf(tname,"HistoArea_0");
     
     TH1D *tmp = (TH1D*)gDirectory->Get(tname);
     if (tmp) return;
@@ -40,30 +40,26 @@ void THistoCharges::CreateHistograms()
       
       char name[100];
       char title[100];
-      sprintf(name,"HistoCharge_%i",i);
+      sprintf(name,"HistoArea_%i",i);
       TH1D *otmp = (TH1D*)gDirectory->Get(name);
       if (otmp) delete otmp;      
  
-      sprintf(title,"Histo Charge channel=%i",i);
+      sprintf(title,"Histo Area channel=%i",i);
       
       TH1D *tmp = new TH1D(name, title, 5000, 0,500000);
-      tmp->SetXTitle("Charge (ADC*sample value)");
+      tmp->SetXTitle("Area (ADC*sample value)");
       tmp->SetYTitle("Counts");
       
       push_back(tmp);
   }
 }
-void THistoCharges::UpdateHistograms(TDataContainer& dataContainer)
+void THistoArea::UpdateHistograms(TDataContainer& dataContainer)
 {
-  TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
+  TAEvent * dev = TEventProcessor::instance()->GetAEvent();
 
-  for(unsigned int i = 0; i < dev->dartChannel.size(); i++)
+  for(unsigned int i = 0; i < dev->channel.size(); i++)
   {
-    GetHistogram(dev->dartChannel[i].ch)->Fill(dev->dartChannel[i].charge);
-  }
-  for(unsigned int i = 0; i < dev->vetoChannel.size(); i++)
-  {
-    GetHistogram(dev->vetoChannel[i].Vch)->Fill(dev->vetoChannel[i].Vcharge);
+    GetHistogram(dev->channel[i].ch)->Fill(dev->channel[i].area);
   }
 }
 
@@ -110,21 +106,17 @@ void THistoHigh::CreateHistograms()
 }
 void THistoHigh::UpdateHistograms(TDataContainer& dataContainer)
 {
-  TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
+  TAEvent * dev = TEventProcessor::instance()->GetAEvent();
 
-  for(unsigned int i = 0; i < dev->dartChannel.size(); i++)
+  for(unsigned int i = 0; i < dev->channel.size(); i++)
   {
-    GetHistogram(dev->dartChannel[i].ch)->Fill(dev->dartChannel[i].max);
-  }
-  for(unsigned int i = 0; i < dev->vetoChannel.size(); i++)
-  {
-    GetHistogram(dev->vetoChannel[i].Vch)->Fill(dev->vetoChannel[i].Vmax);
+    GetHistogram(dev->channel[i].ch)->Fill(dev->channel[i].max);
   }
 }
 
-TCanvasHandleBase* THistoCharges::CreateCanvas()
+TCanvasHandleBase* THistoArea::CreateCanvas()
 {
-//  return new TSimpleHistogramCanvas(GetHistogram(0),"Charge Channel", "COLZ");
+//  return new TSimpleHistogramCanvas(GetHistogram(0),"Area Channel", "COLZ");
    TFancyHistogramCanvas * canvas = new TFancyHistogramCanvas(this, GetSubTabName(),2,true); // 2 groups, disable auto updte
     canvas->SetGroupName("Group");
     canvas->SetChannelName("Channel");
@@ -148,18 +140,18 @@ TCanvasHandleBase* THistoHigh::CreateCanvas()
 ///////////////////////////////////////////////////
 ///////////////////////////////////////////////////
 
-THistoChargeSummary::THistoChargeSummary()
+THistoAreaSummary::THistoAreaSummary()
 {
 
-  SetTabName("Charge");
-  SetSubTabName("Charge Summary");
+  SetTabName("Area");
+  SetSubTabName("Area Summary");
   CreateHistograms();
 }
 
-void THistoChargeSummary::CreateHistograms()
+void THistoAreaSummary::CreateHistograms()
 {
   char name[100];
-  sprintf(name,"ChargeSummaryDart");
+  sprintf(name,"AreaSummary");
 
   // check if we already have histogramss.
   if(size() != 0){
@@ -172,31 +164,25 @@ void THistoChargeSummary::CreateHistograms()
   clear();
 
   char title[100];
-  sprintf(title,"Dart Charge Summary");
+  sprintf(title," Area Summary");
   TH1D *tmp = new TH1D(name, title, 5000, 0,500000);
-  tmp->SetXTitle("Charge (ADC*sample value)");
+  tmp->SetXTitle("Area (ADC*sample value)");
   tmp->SetYTitle("Counts");
   push_back(tmp);
 
-  sprintf(title,"Veto Charge Summary");
-  tmp = new TH1D(name, title, 5000, 0,500000);
-  tmp->SetXTitle("Charge (ADC*sample value)");
-  tmp->SetYTitle("Counts");
-  push_back(tmp);
 }
 
-void THistoChargeSummary::UpdateHistograms(TDataContainer& dataContainer)
+void THistoAreaSummary::UpdateHistograms(TDataContainer& dataContainer)
 {
-  TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
+  TAEvent * dev = TEventProcessor::instance()->GetAEvent();
 
-  GetHistogram(0)->Fill(dev->totCharge);
-  GetHistogram(1)->Fill(dev->vetoCharge);
+  GetHistogram(0)->Fill(dev->areaS);
 
 }
 
-TCanvasHandleBase* THistoChargeSummary::CreateCanvas()
+TCanvasHandleBase* THistoAreaSummary::CreateCanvas()
 {
-  return new TSimpleHistogramCanvas(GetHistogram(0),"Charge Summary", "COLZ");
+  return new TSimpleHistogramCanvas(GetHistogram(0),"Area Summary", "COLZ");
 }
 
 

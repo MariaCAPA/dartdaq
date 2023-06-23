@@ -5,7 +5,7 @@
 #include "TFancyHistogramCanvas.hxx"
 #include "TTree.h"
 
-#include "TDartAnaManager.hxx"
+#include "TAAnaManager.hxx"
 
 class V1730Loop: public TRootanaDisplay {
 
@@ -14,12 +14,12 @@ public:
   TTree * fTree;
   // An analysis manager.  Define and fill histograms in
   // analysis manager.
-  TDartAnaManager *anaManager;
+  TAAnaManager *anaManager;
 
   V1730Loop() {
     SetOutputFilename("v1730wfdisplay");
     DisableRootOutput(true);
-    anaManager = new TDartAnaManager();
+    anaManager = new TAAnaManager();
   }
 
   void AddAllCanvases() {
@@ -45,8 +45,8 @@ public:
   {
     anaManager->BeginRun(transition, run, time, GetODB());
     fTree = new TTree("td",Form("MIDAS data run %d",run));
-    TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
-    fTree->Branch("DartEvent",dev);
+    TAEvent * dev = TEventProcessor::instance()->GetAEvent();
+    fTree->Branch("AEvent",dev);
 
   }
 

@@ -43,13 +43,13 @@ void TEventProcessor::Reset()
 
 int TEventProcessor::ProcessMidasEvent(TDataContainer& dataContainer) 
 {
-  fDartEvent->Reset();
+  fAEvent->Reset();
 
-  fDartEvent->run=fRun;
-  fDartEvent->eventNumber= dataContainer.GetMidasEvent().GetSerialNumber();
-  fDartEvent->midasEventNumber= dataContainer.GetMidasEvent().GetSerialNumber();
-  fDartEvent->bankNumber= 0;
-  fDartEvent->time = dataContainer.GetMidasEvent().GetTimeStamp();
+  fAEvent->run=fRun;
+  fAEvent->eventNumber= dataContainer.GetMidasEvent().GetSerialNumber();
+  fAEvent->midasEventNumber= dataContainer.GetMidasEvent().GetSerialNumber();
+  fAEvent->bankNumber= 0;
+  fAEvent->time = dataContainer.GetMidasEvent().GetTimeStamp();
 
   char name[100];
   sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
@@ -69,10 +69,10 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   //static ULong64_t prevTime = 0;
   static double prevTime = 0;
 
-  fDartEvent->timeNs = V1730->GetHeader().timeStampNs;
+  fAEvent->timeNs = V1730->GetHeader().timeStampNs;
 
   // VERBOSE
-  //std::cout << " timeNs " << std::setprecision(10) << fDartEvent->timeNs  << std::endl;
+  //std::cout << " timeNs " << std::setprecision(10) << fAEvent->timeNs  << std::endl;
 
   int nCh =  V1730->GetNChannels();
 
@@ -85,18 +85,9 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
     bsl[i]=0;
     rms[i]=0;
     int theCh = V1730->GetChannelData(i).GetChannelNumber();
-    if (IsDart(theCh)) 
-    {
-      AnalyzeDartChannel(V1730->GetChannelData(i));
-      bsl[i]=fDartEvent->dartChannel[i].bsl;
-      rms[i]=fDartEvent->dartChannel[i].rms;
-    }
-    else 
-    {
-      AnalyzeVetoChannel(V1730->GetChannelData(i));
-      bsl[i]=fDartEvent->vetoChannel[i].Vbsl;
-      rms[i]=fDartEvent->vetoChannel[i].Vrms;
-    }
+    AnalyzeAChannel(V1730->GetChannelData(i));
+    bsl[i]=fAEvent->channel[i].bsl;
+    rms[i]=fAEvent->channel[i].rms;
   }
   // MARIA 070622 TODO !! write in DB to read it in history
   if (hDB) 
@@ -105,150 +96,44 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
     db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/rms/rms", rms, 16*sizeof(float), 16, TID_FLOAT);
   }
 
-  fDartEvent->vetoMult = fDartEvent->vetoChannel.size();
+  fAEvent->mult = fAEvent->channel.size();
   double area=0;
-  for (unsigned int ch=0; ch<fDartEvent->dartChannel.size(); ch++) area += fDartEvent->dartChannel[ch].charge;
-  fDartEvent->totCharge=area;
-  for (unsigned int ch=0; ch<fDartEvent->vetoChannel.size(); ch++) area += fDartEvent->vetoChannel[ch].Vcharge;
-  fDartEvent->vetoCharge=area;
-  fDartEvent->dt = fDartEvent->timeNs-prevTime;
-  prevTime = fDartEvent->timeNs;
+  for (unsigned int ch=0; ch<fAEvent->channel.size(); ch++) area += fAEvent->channel[ch].area;
+  fAEvent->areaS=area;
+  fAEvent->dt = fAEvent->timeNs-prevTime;
+  prevTime = fAEvent->timeNs;
   
   return 1;
 }
-bool TEventProcessor::IsDart(int ch)
+
+int TEventProcessor::AnalyzeAChannel(TV1730RawChannel& channelData)
 {
-  // TODO READ FROM DB
-  // BY NOW, DART CHANNELS ARE 0 & 1
-  if (ch==0 || ch==1) return true;
-  return false;
-}
-int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
-{
-  TDartEvent::TDartCh dch;
-  GetBasicParam(channelData, dch.bsl, dch.bmax, dch.bmaxp, dch.bmin, dch.bminp, dch.bimax, dch.rms, dch.max, dch.t0, dch.tMax, dch.charge, dch.min, dch.tMin);
+  TAEvent::TACh dch;
+  //GetBasicParam(channelData, dch.bsl, dch.bmax, dch.bmaxp, dch.bmin, dch.bminp, dch.bimax, dch.rms, dch.max, dch.t0, dch.tMax, dch.charge, dch.min, dch.tMin);
+  GetBasicParam(channelData, dch.area, dch.bsl, dch.rms, dch.max, dch.min, dch.t0, dch.tMax, dch.tMin);
   dch.ch=channelData.GetChannelNumber();
 
-
-  int nSamples = channelData.GetNSamples();
-  ////////////////////
-  // TODO CONFIGURE FROM DB
-  const int nBslSamples = 2000;
-  const double polarity = 1.; 
-  const double SR=0.5; // GS/s
-  //////////////////
-  double bslEnd=0;
-  double rmsEnd=0;
-  double area90=0;
-  double area640=0;
- 
-  double bsl=0; 
-  double rms=0; 
-  double nRMS=5; 
-
-  // LUDO: average 100 first events for channel i in 
-  //TEventProcessor::tini[i]
-
-  //Calculation of baseline and rms at the beginning of the wf
-  int samp=0;
-  for (; samp < nBslSamples; samp++)
-  {
-      double adc = channelData.GetADCSample(samp);
-      bsl += adc;
-      rms += adc*adc;
-  }
-  bsl /= (float)nBslSamples;
-  rms /= (float)nBslSamples;
-  rms -= bsl*bsl;
-  rms = sqrt(rms);
-
-  // thresholds for the integral calculation
-  double threshold = bsl + polarity*nRMS*rms;
-  //double threshold_n = bsl - polarity*nRMS*rms;
-  //double threshold = bsl + 40;
-
-  //Calculation of baseline and rms at the end of the wf  
-  /*samp=1;
-  for (; samp <= nBslSamples; samp++) 
-  {
-      double adc = channelData.GetADCSample(nSamples-samp);
-      bslEnd += adc;
-      rmsEnd += adc*adc;
-  }
-  bslEnd /= (float)nBslSamples;
-  rmsEnd /= (float)nBslSamples;
-  rmsEnd -= bslEnd*bslEnd;
-  rmsEnd = sqrt(rmsEnd);
-*/
-
-  // integrate from tMax - n_pre
-  samp=dch.t0;
-  //samp=dch.t0-100;
-  //samp=dch.tMax-100;
-  int n_pre = 10;
-  //samp=dch.tMax - n_pre;
-
-  int max640 = samp + 640*SR;
-  //int max640 = samp + 640*SR+100;
-  double test;
-
-  for (; samp < max640 ; samp++) 
-  {
-    if (samp >= 6e3 ) break;
-    double signal = channelData.GetADCSample(samp);
-    //if (signal > threshold) {
-    test = polarity*(signal - bsl);
-    //} else if (signal < threshold_n) {
-        //test = polarity*(signal - threshold_n);
-    //} else { continue; }
-
-    area640 += test;
-  }
-
-  dch.bslEnd = bslEnd;
-  dch.rmsEnd = rmsEnd;
-  dch.charge90 = area90;
-  dch.charge640 = area640;
-
-//std::cout << " area90 " << area90 << " area640 " << area640 << std::endl;
-
-
-  fDartEvent->dartChannel.push_back(dch);
+  fAEvent->channel.push_back(dch);
   return 1;
 }
 
-int TEventProcessor::AnalyzeVetoChannel(TV1730RawChannel& channelData)
-{
-  TDartEvent::TVetoCh vch;
-  vch.Vch=channelData.GetChannelNumber();
-  GetBasicParam(channelData,vch.Vbsl, vch.Vbmax, vch.Vbmaxp, vch.Vbmin, vch.Vbminp, vch.Vbimax, vch.Vrms, vch.Vmax, vch.Vt0, vch.VtMax, vch.Vcharge, vch.Vmin, vch.VtMin);
-  if (vch.Vt0>0) fDartEvent->vetoChannel.push_back(vch); // only when it pass software threshold
-  return 1;
-}
-
-int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, double &bmax, double &bmaxp, double &bmin, double &bminp, double &bimax, double &rms, double &max, double & t0, double &tMax, double &area, double &min, double &tMin)
+int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double & area, double & bsl, double & rms, double & max, double & min, double & t0, double & tMax, double & tMin)
 {
   int nSamples = channelData.GetNSamples();
   ////////////////////
   // TODO CONFIGURE FROM DB
-  const int nBslSamples = 2000;
-  const double polarity = 1.; 
+  const int nBslSamples = 100;
+  const double polarity = -1.; 
   const int nRMS = 5;
-  //const int thr = 8; // in ADC samples
   //////////////////
 
+  area=0;
   bsl=0;
-  bmax=0;
-  bmin=0;
-  bmaxp=0;
-  bminp=0;
-  bimax=0;
   rms=0;
   max=0;
+  min=0; 
   t0=0;
   tMax=0;
-  area=0;
-  min=0; 
   tMin=0;
    
   //baseline and rms calculation at the beginning of the wf
@@ -256,7 +141,6 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   for (; samp < nBslSamples; samp++) 
   { 
       double adc = channelData.GetADCSample(samp);
-      if (adc > bmax) {bmax = adc ; bmaxp = samp ;}
       bsl += adc;
       rms += adc*adc;
   }
@@ -264,32 +148,9 @@ int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, d
   rms /= (float)nBslSamples;
   rms -= bsl*bsl;
   rms = sqrt(rms);
-  bmax=bmax-bsl;
 
-//////////////////////////////// Baseline maximum and minimum calculation ///////////////////////////
 
-samp=0;
-/*bmax=0;
-for (; samp < nBslSamples; samp++)
-  {
-      double adc = channelData.GetADCSample(samp) - bsl;
-      if (adc > bmax) {bmax = adc ; bmaxp = samp ;}
-      if (adc < bmin) {bmin = adc ; bminp = samp ;}
-  }
-
-  //Calculation of integral around maximum of the baseline (1 sample before and 2 after)
-  for (int samp=0; samp < nBslSamples; samp++)
-  {
-  	  if ( samp == bmaxp ) {
-	   double adc_1 = channelData.GetADCSample(samp-1);
-	   double adc_2 = channelData.GetADCSample(samp);
-       double adc_3 = channelData.GetADCSample(samp+1);
-       double adc_4 = channelData.GetADCSample(samp+2);
-
-		bimax += (adc_1 + adc_2 + adc_3 + adc_4 - 4.*bsl);
-      }
-  } 
-*/
+  samp=0;
 
   // look for trigger time
   double threshold = bsl + polarity*nRMS*rms;
@@ -306,12 +167,12 @@ for (; samp < nBslSamples; samp++)
 
   //t0 FOUND!
   t0=samp;
-  //t0=2876;
-
   
   // look for maximum and maximum time
   max= polarity*(channelData.GetADCSample(samp)  - bsl);
+  min=max;
   tMax=samp;
+  tMin=samp;
   //min= polarity*(channelData.GetADCSample(samp)  - bsl);
   //tMin=samp;
   
@@ -319,34 +180,13 @@ for (; samp < nBslSamples; samp++)
   for (; samp < nSamples ; samp++) 
   { 
     double signal = channelData.GetADCSample(samp);
-    //if(signal > threshold) { 
     double test = polarity*(signal  - bsl);
     if (test>max) {max=test; tMax = samp;}
-       //if (test<min) {min=test; tMin = samp;}
-    //} else { continue; }
+    if (test<min) {min=test; tMin = samp;}
 
-    //area += TEST;
+    area += test;
   }
 
-//Charge integration
-  double TEST;
-  int n_pre = 10;
-  //samp=tMax - n_pre;
-  samp = t0;
-  //samp = tMax-100;
-  //int roi_to = 3500 + 100;
-  for (; samp < nSamples ; samp++)
-  //for (; samp < roi_to ; samp++)
-  {
-    double signal = channelData.GetADCSample(samp);
-    //if(signal > threshold) {
-    TEST = polarity*(signal  - bsl);
-    //} else if (signal < threshold_n) { 
-    //TEST = polarity*(signal  - threshold_n);
-    //} else { continue; }
-
-    area += TEST;
-  }
 
   return 1;
 }

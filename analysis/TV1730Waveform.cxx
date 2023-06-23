@@ -107,10 +107,6 @@ void TV1730Waveform::CreateHistograms()
 
 void TV1730Waveform::UpdateHistograms(TDataContainer &dataContainer) 
 {
-  //int fe_idx = dataContainer.GetMidasEvent().GetTriggerMask();
-
-  //TDartEvent * dev = TEventProcessor::instance()->GetDartEvent(); // updated in TDartAnaManager
-
   char name[100];
   sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
   TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);

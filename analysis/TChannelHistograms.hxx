@@ -5,9 +5,9 @@
 #include "THistogramArrayBase.h"
 #include "TSimpleHistogramCanvas.hxx"
 //////////////////// CHARGE OF EVERY CHANNEL
-class THistoCharges : public THistogramArrayBase {
+class THistoArea : public THistogramArrayBase {
 public:
-  THistoCharges();
+  THistoArea();
 
   void UpdateHistograms(TDataContainer& dataContainer);  // update histograms
 
@@ -30,10 +30,10 @@ public:
   
 };
 
-////////////////////  SUM CHARGE DART & VETO
-class THistoChargeSummary : public THistogramArrayBase {
+////////////////////  SUM CHARGE 
+class THistoAreaSummary : public THistogramArrayBase {
 public:
-  THistoChargeSummary();
+  THistoAreaSummary();
 
   void UpdateHistograms(TDataContainer& dataContainer);  // update histograms
 

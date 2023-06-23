@@ -8,7 +8,7 @@
 #include "TFile.h"
 #include "TTree.h"
 
-#include "TDartAnaManager.hxx"
+#include "TAAnaManager.hxx"
 #include "TEventProcessor.hxx"
 
 #include <TMidasEvent.h>
@@ -30,7 +30,7 @@ public:
 
   // An analysis manager.  Define and fill histograms in 
   // analysis manager.
-  TDartAnaManager *anaManager;
+  TAAnaManager *anaManager;
 
   // The tree to fill.
   TTree *fTree;
@@ -64,8 +64,8 @@ std::cout << " is offline : " << IsOffline() << std::endl;
     //CreateOutputFile("test");
     // Create a TTree
     fTree = new TTree("td",Form("MIDAS data run %d",run));
-    TDartEvent * dev = TEventProcessor::instance()->GetDartEvent();
-    fTree->Branch("DartEvent",dev);
+    TAEvent * dev = TEventProcessor::instance()->GetAEvent();
+    fTree->Branch("AEvent",dev);
   }   
 
   void EndRun(int transition,int run,int time)
@@ -95,13 +95,13 @@ std::cout << " is offline : " << IsOffline() << std::endl;
     char *pdata = NULL;
     for (int bk=0; bk<nbk; bk++)
     {
-      TEventProcessor::instance()->GetDartEvent()->Reset();
+      TEventProcessor::instance()->GetAEvent()->Reset();
 
-      TEventProcessor::instance()->GetDartEvent()->run=TEventProcessor::instance()->GetRun();
-      TEventProcessor::instance()->GetDartEvent()->eventNumber= cont++;
-      TEventProcessor::instance()->GetDartEvent()->midasEventNumber= event.GetSerialNumber();
-      TEventProcessor::instance()->GetDartEvent()->bankNumber= bk;
-      TEventProcessor::instance()->GetDartEvent()->time = event.GetTimeStamp();
+      TEventProcessor::instance()->GetAEvent()->run=TEventProcessor::instance()->GetRun();
+      TEventProcessor::instance()->GetAEvent()->eventNumber= cont++;
+      TEventProcessor::instance()->GetAEvent()->midasEventNumber= event.GetSerialNumber();
+      TEventProcessor::instance()->GetAEvent()->bankNumber= bk;
+      TEventProcessor::instance()->GetAEvent()->time = event.GetTimeStamp();
 
       //void ** pdata;
       //event.IterateBank32(&pbk32, (char**)pdata);
@@ -160,6 +160,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 
 int Initializetmin(const char *file)
 {
+/*
   // read  number of channels
 
   double dummy0, dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, dummy9, dummy10, dummy11, tMax;
@@ -221,6 +222,7 @@ int Initializetmin(const char *file)
   // set tini vals
   for (int i=0; i<nCh; i++) {TEventProcessor::tini_push_back(tini_aux[i]/nEv[i]); std::cout << " ch " << i << " tini: " << tini_aux[i]/nEv[i] << std::endl;}
   
+*/
   return 0;
 }
 
@@ -228,8 +230,9 @@ int Initializetmin(const char *file)
 int main(int argc, char *argv[])
 {
 
-  int error = Initializetmin(argv[1]);
-  if (error) return error;
+  // MARIA NOT BY NOW
+  //int error = Initializetmin(argv[1]);
+  //if (error) return error;
 
   Analyzer::CreateSingleton<Analyzer>();
   return Analyzer::Get().ExecuteLoop(argc, argv);

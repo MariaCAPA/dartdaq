@@ -7,7 +7,7 @@
 #include "TFile.h"
 #include "TTree.h"
 
-#include "TDartAnaManager.hxx"
+#include "TAAnaManager.hxx"
 #include "TEventProcessor.hxx"
 
 
@@ -18,8 +18,8 @@ public:
   // Histograms to fill
   TV1730Waveform* fAverage;
 
-  // Dart event that is being processed
-  TDartEvent * fDEv;
+  // A event that is being processed
+  TAEvent * fDEv;
 
   // channels to average
   std::vector<int> fChannels;
@@ -52,7 +52,7 @@ public:
     TEventProcessor::instance()->SetRun(run);
     //CreateOutputFile("test");
     // Create a TTree
-    fDEv = TEventProcessor::instance()->GetDartEvent();
+    fDEv = TEventProcessor::instance()->GetAEvent();
   }   
 
   void EndRun(int transition,int run,int time)

@@ -61,39 +61,42 @@ endif # MIDASSYS
 #OBJS += TEvaluationHistograms.o 
 OBJS += TV1730RawData.o 
 OBJS += TV1730Waveform.o 
-OBJS += TDartAnaManager.o 
+OBJS += TAAnaManager.o 
 OBJS += TEventProcessor.o 
-#OBJS += TDartEventDict.o 
+#OBJS += TAEventDict.o 
 OBJS += TChannelHistograms.o 
-OBJS += TDartReadRun.o 
-OBJS += TDartVisu.o 
+OBJS += TAReadRun.o 
+OBJS += TAVisu.o 
 
-all: $(OBJS) wfViewer.exe midas2root.exe wfAverage.exe dartlib.so
+all: $(OBJS) wfViewer.exe midas2root.exe midas2Anais.exe wfAverage.exe dartlib.so
 
 lib: dartlib.so
 
-wfViewer.exe: wfViewer.cxx TDartEventDict.cxx $(OBJS) 
+wfViewer.exe: wfViewer.cxx TAEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
-wfAverage.exe: wfAverage.cxx TDartEventDict.cxx $(OBJS) 
+wfAverage.exe: wfAverage.cxx TAEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
-midas2root.exe: midas2root.cxx TDartEventDict.cxx $(OBJS) 
+midas2root.exe: midas2root.cxx TAEventDict.cxx $(OBJS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
+
+midas2Anais.exe: midas2Anais.cxx TAEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 %Dict.o: %Dict.cxx
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) -c -I. $<
 
-%Dict.cxx: TV1730Waveform.hxx TDartAnaManager.hxx  TDartReadRun.hxx TDartVisu.hxx
+%Dict.cxx: TV1730Waveform.hxx TAAnaManager.hxx  TAReadRun.hxx TAVisu.hxx
 	#rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx $^ $*_LinkDef.h
 	rootcint -f $@ -c -I. $(INCFLAGS) $*.hxx $^ $*_LinkDef.h
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) -c $<
 
-#dartlib.so: TDartEventDict.cxx TDartEvent.hxx 
+#dartlib.so: TAEventDict.cxx TAEvent.hxx 
 dartlib.so: *.cxx *.hxx
-	$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  TDartEventDict.cxx $(OBJS) $(LIBS) $(ROOTGLIBS) 
+	$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  TAEventDict.cxx $(OBJS) $(LIBS) $(ROOTGLIBS) 
 	#$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  $^
 
 
