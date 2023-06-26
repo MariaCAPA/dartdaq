@@ -77,7 +77,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
   //#include "TEventMusic.hxx"
 
         double rmsMin, bslCambiante, rmsCambiante, bslRmsMin, trig;
-	double bslTot, bslTotF, rmsTot, rmsTotF;
+	double bslTot=0, bslTotF=0, rmsTot, rmsTotF;
 
 	int i, j, k, l, m, p;
  
@@ -132,7 +132,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 bslCambiante = 0;
                 rmsCambiante = 0;
 
-                for(l = 0; l < nSamples - nPtsBsl; l++)
+               /* for(l = 0; l < nSamples - nPtsBsl; l++)
                 {
                         if(l < tFix - nPtsBsl || l > tFix + tWin)
                         {
@@ -148,14 +148,16 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
 		                        bslRmsMin = bslCambiante;
 		                }
                         }
-                }
+                }*/
 
                 bsl[j] = bslRmsMin;
                 
                 rms[j] = rmsMin;
                 
+                bslTot=0;
+                bslTotF=0;
 
-               /* for(k = 0; k < nPtsBsl; k++) bslTot += hAux->GetBinContent(k+1)/nPtsBsl;
+                for(k = 0; k < nPtsBsl; k++) bslTot += hAux->GetBinContent(k+1)/nPtsBsl;
                 for(k = 0; k < nPtsBsl; k++) bslTotF += hAux->GetBinContent(nPtsBsl+k+1)/nPtsBsl;
                 for(k = 0; k < nPtsBsl; k++) rmsTot += (hAux->GetBinContent(k+1)-bslTot)*(hAux->GetBinContent(k+1)-bslTot)/nPtsBsl;
                 for(k = 0; k < nPtsBsl; k++) rmsTotF += (hAux->GetBinContent(nPtsBsl+k+1)-bslTotF)*(hAux->GetBinContent(nPtsBsl+k+1)-bslTotF)/nPtsBsl;
@@ -163,7 +165,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 rmsTotF = sqrt(rmsTotF);
 
 		if(bslTot > bslTotF) {bsl[j] = bslTot; rms[j] = rmsTot;}
-		else {bsl[j] = bslTotF; rms[j] = rmsTotF;}*/
+		else {bsl[j] = bslTotF; rms[j] = rmsTotF;}
 
                 for(k = 0; k < nSamples; k++) hAux->SetBinContent(k+1,hAux->GetBinContent(k+1)-bsl[j]);
 

@@ -56,7 +56,7 @@ typedef int INT32;
 // VME base address 
 DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
 DWORD VMEBUS_BOARDNO = 0;
-DWORD LINK = 1;
+DWORD LINK = 0; // 1
 WORD V1730EVENTID = 1;
 WORD V1730TRIGGERMASK = 0;
 int VMEhandle=-1;
@@ -280,8 +280,8 @@ std::cout << " polled " << std::endl;
 
   ////////////////////////
   // Open VME interface, init link board_number
-  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
+  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
+  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
   if (ret != CAEN_DGTZ_Success) 
   { 
     std::cout << " Error opening Digitizer. Digitizer error code: " << ret << std::endl;
@@ -405,7 +405,7 @@ INT begin_of_run(INT run_number, char *error)
   ret = CAEN_DGTZ_GetPostTriggerSize(VMEhandle, &v1730_settings.posttrigger);
   if (ret != CAEN_DGTZ_Success) 
     std::cout << " Error Cannot set posttrigger to " << v1730_settings.posttrigger << " Digitizer error code: " << ret << std::endl;
-  if (testVal!=v1730_settings.posttrigger) std::cout << " WARNING : POSTRIGGER  SET TO : " << v1730_settings.posttrigger;
+  if (testVal!=v1730_settings.posttrigger) std::cout << " WARNING : POSTRIGGER  SET TO : " << v1730_settings.posttrigger << " instead of " << testVal << std::endl;
 
   ////////////// NIM LEVELS
   ret = CAEN_DGTZ_SetIOLevel(VMEhandle, CAEN_DGTZ_IOLevel_NIM);
@@ -427,7 +427,7 @@ INT begin_of_run(INT run_number, char *error)
        uint32_t  dcoffset = v1730_settings.ch_bslpercent[i] * 655.35;
        ret = CAEN_DGTZ_SetChannelDCOffset(VMEhandle, i, dcoffset);
        ret = CAEN_DGTZ_GetChannelDCOffset(VMEhandle, i, &dcoffset);
-       //ret = CAEN_DGTZ_SetChannelTriggerThreshold(VMEhandle, i, v1730_settings.ch_threshold[i]);
+      // ret = CAEN_DGTZ_SetChannelTriggerThreshold(VMEhandle, i, v1730_settings.ch_threshold[i]);
        if (!strcmp(&v1730_settings.pulsePolarity,"+")) 
          ret = CAEN_DGTZ_SetTriggerPolarity(VMEhandle, i, CAEN_DGTZ_TriggerOnRisingEdge); 
        else ret = CAEN_DGTZ_SetTriggerPolarity(VMEhandle, i, CAEN_DGTZ_TriggerOnFallingEdge);
@@ -1130,12 +1130,15 @@ int set_relative_Threshold()
 	CAEN_DGTZ_SWStopAcquisition(VMEhandle);
 
 	//reset posttrigger
-	ret = CAEN_DGTZ_SetPostTriggerSize(VMEhandle, v1730_settings.posttrigger); 
-	if (ret) 
-    {
-      std::cout << " error setting posttrigger size " << std::endl;
-      return -1;
-	}
+    DWORD testVal;
+    testVal = v1730_settings.posttrigger; 
+    ret = CAEN_DGTZ_SetPostTriggerSize(VMEhandle,v1730_settings.posttrigger);  // Set the posttrigger for each waveform (in samples) 
+    if (ret != CAEN_DGTZ_Success) 
+      std::cout << "set_relative_threshold:  Error Cannot set posttrigger to " << v1730_settings.posttrigger << " Digitizer error code: " << ret << std::endl;
+    ret = CAEN_DGTZ_GetPostTriggerSize(VMEhandle, &v1730_settings.posttrigger);
+    if (ret != CAEN_DGTZ_Success) 
+      std::cout << "set_relative_threshold:  Error Cannot set posttrigger to " << v1730_settings.posttrigger << " Digitizer error code: " << ret << std::endl;
+    if (testVal!=v1730_settings.posttrigger) std::cout << " WARNING : POSTRIGGER  SET TO : " << v1730_settings.posttrigger << " instead of " << testVal << std::endl;
 
 	CAEN_DGTZ_ClearData(VMEhandle);
 

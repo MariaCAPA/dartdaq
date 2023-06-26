@@ -47,8 +47,8 @@ int main(int argc, char *argv[])
 	std::cout << tFix << "	" << tWin << std::endl;
 
 	if(pre == -1) return -1;
-        //tFix = 475;
-        //tWin = 225;
+	tWin = tWin+tFix-475;
+        tFix = 475;
 
 	int cal = 1;
 

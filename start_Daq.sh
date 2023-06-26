@@ -4,7 +4,7 @@ cd /storage/online
 #odbedit -c clean # MARIA 210921 lo comento por ahora
 #   start mhttpd on default port. (Mongoose https version)
 mhttpd  -D  -e dartdaq # you can optionally restrict access to localhost and other specified hosts - see mhttpd
-# fe1730Th -e dartdaq
+#fe1730Th -e dartdaq
 xterm -e fe1730Th -e dartdaq&
 xterm -e wfViewer.exe -Edartdaq&
 sleep 1

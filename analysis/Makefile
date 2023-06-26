@@ -67,10 +67,14 @@ OBJS += TEventProcessor.o
 OBJS += TChannelHistograms.o 
 OBJS += TDartReadRun.o 
 OBJS += TDartVisu.o 
+OBJS += TEventMusic.o
 
-all: $(OBJS) wfViewer.exe midas2root.exe wfAverage.exe dartlib.so
+all: $(OBJS) anaMusic.exe wfViewer.exe midas2root.exe wfAverage.exe dartlib.so
 
 lib: dartlib.so
+
+anaMusic.exe: anaMusic.cxx TDartEventDict.cxx $(OBJS) 
+	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 wfViewer.exe: wfViewer.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
