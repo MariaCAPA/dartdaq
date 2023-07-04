@@ -103,6 +103,9 @@ INT rb_max_event_size = 2*5.12*1024*1024*16 + 1024*16;
 INT rb_event_buffer_size = 1024*1024*1024; // 1GB : MAX ALLOWED
 
 
+// CLOCK. Maria 040723
+uint64_t counter = 0;
+uint64_t prevTimeStamp = 0;
 
 // Hardware 
 int  inRun = 0, missed=0;
@@ -538,6 +541,11 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
       exit(1);
   }
 
+  // SET CLOCK COUNTERS TO 0. Maria 040723
+  counter = 0;
+  prevTimeStamp = 0;
+
+
   // ARM ACQUISITON
   CAEN_DGTZ_ClearData(VMEhandle);
   CAEN_DGTZ_SWStartAcquisition(VMEhandle);
@@ -766,8 +774,6 @@ INT checkEvent()
 
 INT readEvent(void * wp)
 {
-  static uint64_t counter = 0;
-  static uint64_t prevTimeStamp = 0;
   CAEN_DGTZ_ErrorCode ret;
 
   // VERVOSE
