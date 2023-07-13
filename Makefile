@@ -69,7 +69,7 @@ INC_CAEN = /usr/include # /home/daquser/CAEN/CAENVMELib-2.50/include
 # targets
 #
 
-PROGS_DIR = ${HOME}/dartdaq/
+PROGS_DIR = .
 PROGS = $(PROGS_DIR)/fe1730Th $(PROGS_DIR)/fe1730
 
 LIBNAME = $(LIB_DIR)/libmidas.a

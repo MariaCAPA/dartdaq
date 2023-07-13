@@ -40,6 +40,12 @@ typedef int INT32;
 //typedef long int INT64;
 
 #include "experim.h"
+
+// If 1, bouard will use the external clock
+#define EXT_CLK 1
+
+
+
 // Max event size  supported (in bytes).
 // up to 1ms per event ->
 // 1000 us * 500 S/us * 2 B/S * 16 ch = 16MB
@@ -56,7 +62,7 @@ typedef int INT32;
 // VME base address 
 DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
 DWORD VMEBUS_BOARDNO = 0;
-DWORD LINK = 1;
+DWORD LINK = 0; // MARIA, ERA 1
 WORD V1730EVENTID = 1;
 WORD V1730TRIGGERMASK = 0;
 int VMEhandle=-1;
@@ -65,6 +71,7 @@ int VMEhandle=-1;
 int verbose = 1;
 
 //-- Globals -------------------------------------------------------
+
 CAEN_DGTZ_BoardInfo_t BoardInfo;
 uint32_t  AllocatedSize;
 uint32_t BufferSize;
@@ -102,7 +109,9 @@ INT max_event_size_frag = 5 * 1024 * 1024;
 INT rb_max_event_size = 2*5.12*1024*1024*16 + 1024*16; 
 INT rb_event_buffer_size = 1024*1024*1024; // 1GB : MAX ALLOWED
 
-
+// CLOCK
+uint64_t counter = 0;
+uint64_t prevTimeStamp = 0;
 
 // Hardware 
 int  inRun = 0, missed=0;
@@ -289,7 +298,33 @@ std::cout << " polled " << std::endl;
     exit(1);
   }
 
+  //////////////////////
+  // Configure external clock
+  if (EXT_CLK)
+  {
+  
+    uint32_t request = 0;
+    ret = CAEN_DGTZ_ReadRegister(VMEhandle, CAEN_DGTZ_ACQ_CONTROL_ADD, &request);
+    if (ret != CAEN_DGTZ_Success) 
+    {  
+      std::cout << " Failure reading Acquisition Control register (0x8100). Digitizer error code: " << ret << std::endl; 
+      frontend_exit();
+      exit(1);
+    }
+    request |= 0x40; // rise bit 6 (EXTERNAL CLK)
+    std::cout << " Control register (0x8100) set to " << request << std::endl;
+    ret = CAEN_DGTZ_WriteRegister(VMEhandle, CAEN_DGTZ_ACQ_CONTROL_ADD, request);
+    if (ret != CAEN_DGTZ_Success) 
+    {  
+      std::cout << " Failure writing Acquisition Control register (0x8100) to " << request << ". Digitizer error code: " << ret << std::endl; 
+      frontend_exit();
+      exit(1);
+    }
+  }
+
   ///////////////////// reset
+/*
+  // MAIRA 230623 , es necesario?
   ret = CAEN_DGTZ_Reset(VMEhandle);            
   if (ret != CAEN_DGTZ_Success) 
   { 
@@ -297,6 +332,7 @@ std::cout << " polled " << std::endl;
     frontend_exit();
     exit(1);
   }
+*/
 
   ret = CAEN_DGTZ_GetInfo(VMEhandle, &BoardInfo);
   if (ret != CAEN_DGTZ_Success) 
@@ -537,6 +573,10 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
       cm_msg(MERROR, "fe1730", "Failed to create circular buffer"); 
       exit(1);
   }
+  
+  // SET CLOCK COUNTERS TO 0
+  counter = 0;
+  prevTimeStamp = 0;
 
   // ARM ACQUISITON
   CAEN_DGTZ_ClearData(VMEhandle);
@@ -551,6 +591,24 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
       exit(1);
   }
 
+  // MARIA write 1 in GPO register
+  // To start synchornized DAQ with ANAIS
+  uint32_t request = 0;
+  status = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
+  if (status != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure writing GPO register (0x8110) to " << request << ". Digitizer error code: " << status << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  request = 0xC000;
+  status = CAEN_DGTZ_WriteRegister(VMEhandle, 0x811C, request);
+  if (status != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << status << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
   return SUCCESS;
 }
 
@@ -582,6 +640,25 @@ INT end_of_run(INT run_number, char *error)
 
 
     //Reset all IRQs    
+  }
+
+  // MARIA write 0 in GPO register
+  // put flag to low to synchronize DAQ with ANAIS for next run
+  uint32_t request = 0;
+  int answer = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
+  if (answer != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure writing GPO register (0x8110) to " << request << ". Digitizer error code: " << answer << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  request = 0x8000;
+  answer = CAEN_DGTZ_WriteRegister(VMEhandle, 0x811C, request);
+  if (answer != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << answer << std::endl; 
+    frontend_exit();
+    exit(1);
   }
 
   return SUCCESS;
@@ -766,8 +843,6 @@ INT checkEvent()
 
 INT readEvent(void * wp)
 {
-  static uint64_t counter = 0;
-  static uint64_t prevTimeStamp = 0;
   CAEN_DGTZ_ErrorCode ret;
 
   // VERVOSE
