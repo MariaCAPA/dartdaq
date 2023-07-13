@@ -891,7 +891,7 @@ INT readEvent(void * wp)
   {
 
     uint16_t flags = 0;
-    copied+=8*sizeof(WORD); // header
+    copied+=12*sizeof(WORD); // header 12 words: channel_mask(1), flags(1), NSamples(2), timeStamp(4), EventCounter(4)
 
     ret = CAEN_DGTZ_GetEventInfo(VMEhandle, auxBuffer, BufferSize, iev, &EventInfo, &EventPtr);
     if (ret != CAEN_DGTZ_Success) 
@@ -905,8 +905,8 @@ INT readEvent(void * wp)
     // 1st word: channel mask
     *pidata++=channel_mask; 
 
-    // second word: flags ; 0 OK, 1-> error reading
-    *pidata++=flags; 
+    // second word: flags : channelMask from EventInfo
+    *pidata++=EventInfo.ChannelMask; 
 
     // two words: samples per channel
     *((uint32_t*)pidata) = v1730_settings.recordlength;
@@ -919,6 +919,10 @@ INT readEvent(void * wp)
     clock *= CLOCK2NS; 
     *((uint64_t*)pidata) = clock;
     prevTimeStamp = EventInfo.TriggerTimeTag;
+    pidata+=4;
+
+    // four words: event counter
+    *((uint64_t*)pidata) = EventInfo.EventCounter;
     pidata+=4;
 
     for (int ch = 0; ch < (int32_t)BoardInfo.Channels; ch++)

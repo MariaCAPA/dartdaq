@@ -43,6 +43,7 @@ class TAEvent: public TObject
     {
       run=-1;
       eventNumber=-1;
+      eventCounter=-1;
       midasEventNumber=-1;
       bankNumber=-1;
       time=-1;
@@ -57,6 +58,7 @@ class TAEvent: public TObject
     // MEMEBERS
     int run;
     int eventNumber;
+    int eventCounter;
     int midasEventNumber;
     int bankNumber;
     double time;
@@ -70,6 +72,7 @@ class TAEvent: public TObject
     {
       std::cout << " run: " << run << std::endl;
       std::cout << " eventNumber: " << eventNumber << std::endl;
+      std::cout << " eventCounter: " << eventNumber << std::endl;
       std::cout << " midasEventNumber: " << midasEventNumber << std::endl;
       std::cout << " bankNumber: " << bankNumber << std::endl;
       std::cout << " time: " << time << std::endl;
@@ -83,7 +86,7 @@ class TAEvent: public TObject
 
     }
 
-  ClassDef (TAEvent,1);
+  ClassDef (TAEvent,2);
 };
 
 

@@ -7,13 +7,14 @@
 const int numChannels=16;
 TV1730EventHeader::TV1730EventHeader(const uint16_t *data) 
 {
-  // header =  word + word +  dword +  ddword = 8 * word
+  // header =  word + word +  dword +  ddword + ddword = 12 * word
   if (data) 
   {
      channel_mask = data[0];
      flags = data[1];
      samples = *((uint32_t*)(&data[2]));
      timeStampNs = *((uint64_t*)(&data[4]));
+     eventCounter = *((uint64_t*)(&data[8]));
 // DEB
 //std::cout <<" timestamps:"  <<  timeStampNs << std::endl;
 //std::cout << "samples : " << samples << std::endl;
@@ -43,8 +44,8 @@ TV1730RawData::TV1730RawData(int bklen, int bktype, const char *name, void *pdat
     }
   }
 
-  // Data format is: header = 8 words
-  const uint16_t* p = GetData16() + 8;
+  // Data format is: header = 12 words
+  const uint16_t* p = GetData16() + 12;
 
   //for (auto it = fMeasurements.begin(); it != fMeasurements.end(); it++) 
   for (unsigned int i=0; i<fMeasurements.size(); i++)
@@ -69,9 +70,9 @@ void TV1730RawData::Print()
 
   std::cout << "Channel Mask: " << fHeader.channel_mask << std::endl;
 
-  //std::cout << "Event counter:" << fHeader.event_counter << std::endl;
-  //std::cout << "Trigger time: " << fHeader.trigger_time << std::endl;
+  std::cout << "Flags: " << fHeader.flags << std::endl;
   std::cout << "Time stamp ns: " << fHeader.timeStampNs << std::endl;
+  std::cout << "Event Counter: " << fHeader.eventCounter << std::endl;
 
   std::cout << "Num channels: " << GetNChannels() << std::endl;
 

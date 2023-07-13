@@ -39,6 +39,7 @@ public:
     const Int_t kMaxCh = 16;
    Int_t run;
    Int_t mult;
+   Int_t eventCounter;
    std::vector<Int_t> triggered;
    std::vector<Float_t> area;
    std::vector<Float_t> bsl;
@@ -87,6 +88,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
     fTree = new TTree("td",Form("MIDAS data run %d",run));
     fTree->Branch("run",&run);
     fTree->Branch("mult",&mult);
+    fTree->Branch("eventCounter",&eventCounter);
     fTree->Branch("triggered",&triggered);
     fTree->Branch("pulse",&pulse);
     fTree->Branch("area",&area);
@@ -161,6 +163,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
       // Copy info to tree vars
       run=fEv->run;
       mult=fEv->mult;
+      eventCounter=fEv->eventCounter;
       for (int i=0; i<mult; i++)
       {
         triggered.push_back(fEv->channel[i].ch);

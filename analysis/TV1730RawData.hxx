@@ -12,6 +12,7 @@ struct TV1730EventHeader
    uint16_t flags;
    uint32_t samples;
    uint64_t timeStampNs;
+   uint64_t eventCounter;
 
    TV1730EventHeader(const uint16_t* buffer=NULL);
 };
