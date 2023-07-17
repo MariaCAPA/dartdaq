@@ -17,7 +17,8 @@ OSTYPE = $(shell uname)
 #
 CC = gcc $(USERFLAGS)
 CXX = g++ $(USERFLAGS)
-CFLAGS = -g -O2 -Wall -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR)  -I$(INC_CAEN)  -I$(INC_ROOT) -DLINUX
+CFLAGS = -O2 -Wall -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR)  -I$(INC_CAEN)  -I$(INC_ROOT) -DLINUX
+#CFLAGS = -g -Wall -Wno-strict-aliasing -Wuninitialized -I$(INC_DIR)  -I$(INC_CAEN)  -I$(INC_ROOT) -DLINUX
 
 
 #-----------------------
