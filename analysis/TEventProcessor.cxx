@@ -71,10 +71,7 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
 
   fAEvent->timeNs = V1730->GetHeader().timeStampNs;
   fAEvent->eventCounter = V1730->GetHeader().eventCounter;
-
-  // VERBOSE
-  //std::cout << " timeNs " << std::setprecision(10) << fAEvent->timeNs  << std::endl;
-
+  fAEvent->trigger_mask = V1730->GetHeader().trigger_mask;
   int nCh =  V1730->GetNChannels();
 
   // loop in channels

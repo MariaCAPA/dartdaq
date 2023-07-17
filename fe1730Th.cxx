@@ -299,21 +299,22 @@ std::cout << " polled " << std::endl;
   }
 
   //////////////////////
-  // Configure external clock
+  // Configure external clock (bit 6 of 0x8100 to 1)
+  // configure count all triggers (bit 3 of 0x8100 to 1)
   if (EXT_CLK)
   {
   
     uint32_t request = 0;
-    ret = CAEN_DGTZ_ReadRegister(VMEhandle, CAEN_DGTZ_ACQ_CONTROL_ADD, &request);
+    ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_ACQUISITION_CONTROL, &request);
     if (ret != CAEN_DGTZ_Success) 
     {  
       std::cout << " Failure reading Acquisition Control register (0x8100). Digitizer error code: " << ret << std::endl; 
       frontend_exit();
       exit(1);
     }
-    request |= 0x40; // rise bit 6 (EXTERNAL CLK)
+    request |= 0x48; // rise bit 6 (EXTERNAL CLK) and bit 3 (count all triggers)
     std::cout << " Control register (0x8100) set to " << request << std::endl;
-    ret = CAEN_DGTZ_WriteRegister(VMEhandle, CAEN_DGTZ_ACQ_CONTROL_ADD, request);
+    ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_ACQUISITION_CONTROL, request);
     if (ret != CAEN_DGTZ_Success) 
     {  
       std::cout << " Failure writing Acquisition Control register (0x8100) to " << request << ". Digitizer error code: " << ret << std::endl; 
@@ -491,6 +492,15 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   ret = CAEN_DGTZ_SetExtTriggerInputMode(VMEhandle, (v1730_settings.externaltrigger ? CAEN_DGTZ_TRGMODE_ACQ_ONLY: CAEN_DGTZ_TRGMODE_DISABLED));
   if (ret != CAEN_DGTZ_Success) std::cout << " Error Cannot set external trigger. Digitizer error code: " << ret << std::endl; 
 
+  uint32_t request = 0;
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_TRIG_SRCE_EN_MASK, &request);
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure reading trigger control register (0x810C). Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  std::cout << " ACQUISITION TRIGGER CONTROL  REGISTER (0x810C): " << std::hex << request << std::endl;
 
 
   std::cout << " active channels :  " << enabledChannels <<  " N samples: " <<  v1730_settings.recordlength << std::endl;
@@ -561,7 +571,6 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
 
   // ENABLE IRQ???
 
-  printf("End of begin_of_run\n");
 
 
   // CREATE CIRCULAR BUFFER 
@@ -591,9 +600,40 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
       exit(1);
   }
 
+  // READ DAQ REGISTER
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_ACQUISITION_CONTROL, &request);
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure reading Acquisition Control register (0x8100). Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  // rise bit 3 (count all triggers)
+  request |= 0x08; //  bit 3 (count all triggers)
+
+
+
+  ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_ACQUISITION_CONTROL, request);
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure writing Acquisition Control register (0x8100) to " << request << ". Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_ACQUISITION_CONTROL, &request);
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure reading Acquisition Control register (0x8100). Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  std::cout << " ACQUISITION CONTROL REGISTER: " << request << std::endl;
+
+  printf("End of begin_of_run\n");
+
   // MARIA write 1 in GPO register
   // To start synchornized DAQ with ANAIS
-  uint32_t request = 0;
+  request = 0;
   status = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
   if (status != CAEN_DGTZ_Success) 
   {  
@@ -601,14 +641,73 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
     frontend_exit();
     exit(1);
   }
-  request = 0xC000;
-  status = CAEN_DGTZ_WriteRegister(VMEhandle, 0x811C, request);
+  // 0x811C
+  // write 1 in bit [14] (force trg-out to 1)
+  // write 1 in bit [15] (test logic level)
+  // write 01 in bits [22 21] of 0x811C  to request trigger options in event header
+  // -> 0x20C000
+  request = 0x20C000;
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  // MARIA to take external trigger as a veto
+  // rise bit 10 0x811C
+  // eliminar esta linea
+  // request |= 0x00000400;
+  ///////////// PERO HOY POR HOY NO FUNCIONA
+
+  status = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_FP_IO_CONTROL, request); // 0x811C
   if (status != CAEN_DGTZ_Success) 
   {  
     std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << status << std::endl; 
     frontend_exit();
     exit(1);
   }
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_FP_IO_CONTROL, &request);
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure reading FP_IO register (0x811C). Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  std::cout << " FP_IO CONTROL REGISTER (0x811C) : " << request << std::endl;
+
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////
+  // MARIA to take external trigger as a veto
+  // rise bit 27 in  0x810C
+  // descomentar todo esto
+  ///////////// PERO HOY POR HOY NO FUNCIONA
+/*
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_TRIG_SRCE_EN_MASK, &request); // 0x810C
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure reading FP_IO register (0x811C). Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  request |= 0x08000000;
+  // para bajarlo hacer request &= 0xF7FFFFFF;
+  status = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_TRIG_SRCE_EN_MASK, request); // 0x810C
+  if (status != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure writing SRC TRG MASK register (0x811C) to " << request << ". Digitizer error code: " << status << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_TRIG_SRCE_EN_MASK, &request); // 0x810C
+  if (ret != CAEN_DGTZ_Success) 
+  {  
+    std::cout << " Failure reading SRC TRG MASK register (0x811C). Digitizer error code: " << ret << std::endl; 
+    frontend_exit();
+    exit(1);
+  }
+  std::cout << "SRC TRG MASK CONTROL REGISTER (0x810C) : " << request << std::endl;
+*/
+
   return SUCCESS;
 }
 
@@ -653,7 +752,7 @@ INT end_of_run(INT run_number, char *error)
     exit(1);
   }
   request = 0x8000;
-  answer = CAEN_DGTZ_WriteRegister(VMEhandle, 0x811C, request);
+  answer = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_FP_IO_CONTROL, request); // 0x811C
   if (answer != CAEN_DGTZ_Success) 
   {  
     std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << answer << std::endl; 
@@ -905,8 +1004,11 @@ INT readEvent(void * wp)
     // 1st word: channel mask
     *pidata++=channel_mask; 
 
-    // second word: flags : channelMask from EventInfo
+    // second word: trigger_mask : channelMask from EventInfo
     *pidata++=EventInfo.ChannelMask; 
+
+// DEB
+//std::cout << " CHANNEL MASK " << std::hex << EventInfo.ChannelMask << " pattern: " << EventInfo.Pattern << std::endl;
 
     // two words: samples per channel
     *((uint32_t*)pidata) = v1730_settings.recordlength;
@@ -1020,7 +1122,7 @@ INT read_event_from_rb(char *pevent, INT off)
   bk_create(pevent, bankName, TID_UINT16,  (void **)&dest); // reserva memeoria en dest 
 
   // copy data 
-  int num = enabledChannels*v1730_settings.recordlength + 8; // header: mask(1)+flags(1)+lengh(2)+timestamp(4)
+  int num = enabledChannels*v1730_settings.recordlength + 12; // header: mask(1)+flags(1)+lengh(2)+timestamp(4)+eventCounter(4)
   memcpy(dest, src, num*sizeof(WORD));
   dest +=num;
 

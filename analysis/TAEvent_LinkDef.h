@@ -12,6 +12,10 @@
 #pragma link C++ class TAVisu+;
 #pragma link C++ class TAReadRun+;
 #pragma link C++ class std::vector<std::vector<int>>;
+#pragma link C++ class std::vector<TH1S>;
+#pragma link C++ class std::vector<TH1S*>;
+#pragma link C++ class std::vector<TH1F>;
+#pragma link C++ class std::vector<TH1F*>;
 
 //#pragma link C++ function readARun;
 //#pragma link C++ function GetWaveform;

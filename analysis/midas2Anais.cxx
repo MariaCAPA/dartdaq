@@ -7,6 +7,7 @@
 #include "TRootanaEventLoop.hxx"
 #include "TFile.h"
 #include "TTree.h"
+#include "TH1S.h"
 
 #include "TAAnaManager.hxx"
 #include "TEventProcessor.hxx"
@@ -36,7 +37,7 @@ public:
   TTree *fTree;
 
   // tree vars
-    const Int_t kMaxCh = 16;
+    const Int_t kMaxCh = 8;
    Int_t run;
    Int_t mult;
    Int_t eventCounter;
@@ -49,7 +50,7 @@ public:
    std::vector<Float_t> tMax;
    std::vector<Float_t> min;
    std::vector<Float_t> max;
-   std::vector< std::vector < int > > pulse;
+   std::vector< TH1S > pulse;
    Double_t time;
    Double_t timeNs;
    Double_t dt;
@@ -162,11 +163,13 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 
       // Copy info to tree vars
       run=fEv->run;
-      mult=fEv->mult;
+      mult=0;
       eventCounter=fEv->eventCounter;
-      for (int i=0; i<mult; i++)
+      uint16_t trigger_mask=fEv->trigger_mask;
+
+      for (int i=0; i<kMaxCh; i++)
       {
-        triggered.push_back(fEv->channel[i].ch);
+        if (trigger_mask & (1<<i)) {triggered.push_back(fEv->channel[i].ch);mult++;}
         area.push_back(fEv->channel[i].area);
         bsl.push_back(fEv->channel[i].bsl);
         rms.push_back(fEv->channel[i].rms);
@@ -178,10 +181,10 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 
         TV1730RawChannel& channelData = bank->GetChannelData(i);
         int nSamples = channelData.GetNSamples();
-        std::vector<int> aux;
+        TH1S  aux (Form("pulse%d",i), "", nSamples, 0 ,nSamples) ;
         for (int j=0; j<nSamples; j++)
         {
-          aux.push_back(channelData.GetADCSample(j));
+          aux.SetBinContent(j+1,channelData.GetADCSample(j));
         }
         pulse.push_back(aux);
       }

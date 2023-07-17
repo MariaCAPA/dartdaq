@@ -11,7 +11,7 @@ TV1730EventHeader::TV1730EventHeader(const uint16_t *data)
   if (data) 
   {
      channel_mask = data[0];
-     flags = data[1];
+     trigger_mask = data[1];
      samples = *((uint32_t*)(&data[2]));
      timeStampNs = *((uint64_t*)(&data[4]));
      eventCounter = *((uint64_t*)(&data[8]));
@@ -22,7 +22,7 @@ TV1730EventHeader::TV1730EventHeader(const uint16_t *data)
     //format = data[0] & 0xFF;
     //event_counter = (data[0] >> 8) & (0xFFFFFF);
     //size_64bit_words = data[0] >> 32;
-    //flags = data[1] >> 52;
+    //trigger_mask = data[1] >> 52;
     //overlap = (data[1] >> 48) & 0xF;
     //trigger_time = data[1] & 0xFFFFFFFFFFFF;
   }
@@ -33,6 +33,14 @@ TV1730RawData::TV1730RawData(int bklen, int bktype, const char *name, void *pdat
 {
   fHeader = TV1730EventHeader(GetData16());
   uint32_t num_samples = fHeader.samples;
+
+// DEB
+//std::cout <<  " channel_mask " << fHeader.channel_mask
+   //<< " trigger_mask " <<  fHeader.trigger_mask
+   //<< " samples " <<  fHeader.samples
+   //<< " timeStampNs " <<  fHeader.timeStampNs
+   //<< "eventCounter " <<  fHeader.eventCounter << std::endl;
+
 
   // fMeasurement
   for (int i = 0; i < 16; i++) 
@@ -70,7 +78,7 @@ void TV1730RawData::Print()
 
   std::cout << "Channel Mask: " << fHeader.channel_mask << std::endl;
 
-  std::cout << "Flags: " << fHeader.flags << std::endl;
+  std::cout << "trigger_mask: " << fHeader.trigger_mask << std::endl;
   std::cout << "Time stamp ns: " << fHeader.timeStampNs << std::endl;
   std::cout << "Event Counter: " << fHeader.eventCounter << std::endl;
 

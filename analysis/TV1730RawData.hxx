@@ -9,7 +9,7 @@
 struct TV1730EventHeader 
 {
    uint16_t channel_mask;
-   uint16_t flags;
+   uint16_t trigger_mask;
    uint32_t samples;
    uint64_t timeStampNs;
    uint64_t eventCounter;
