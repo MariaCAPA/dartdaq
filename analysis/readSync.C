@@ -242,3 +242,39 @@ void readSync(int rAna, int rNew)
   tA->AddFriend(tAAux);
   td->AddFriend(tdAux);
 }
+
+
+
+void checkSync()
+{
+
+TH1F * hN = new TH1F ("hN","",200,0,20e6);
+TH1F * hA = new TH1F ("hA","",200,0,20e6);
+int nA=tA->GetEntries();
+tA->Draw("RT0*50.","","goff");
+for (int i=1; i<nA; i++) hA->Fill(tA->GetV1()[i]-tA->GetV1()[i-1]);
+int nsel = td->Draw("timeNs","AEvent>-1","goff");
+for (int i=1; i<nsel; i++) hN->Fill(td->GetV1()[i]-td->GetV1()[i-1]);
+hN->SetLineColor(kRed);
+
+TCanvas * c = new TCanvas();
+hA->Draw();
+hN->Draw("same");
+
+c = new TCanvas(); c->Divide(2);
+c->cd(1);
+tA->Draw("area00>>hA0(200,0,50e3");
+c->cd(2);
+TH1F * hn0 = new TH1F ("hn0","",200,0,300e3);
+TH1F * hn0A = new TH1F ("hn0A","",200,0,300e3);
+td->Draw("area[0]>>hn0");
+td->Draw("area[0]>>hn0A","AEvent>-1");
+hn0A->SetLineColor(kRed);
+hn0->Draw();
+hn0A->Draw("same");
+c = new TCanvas(); 
+int nselA = tA->Draw("area00","NDEvent>-1","goff");
+int nselN = td->Draw("area[0]","AEvent>-1","goff");
+TGraph * g = new TGraph(nselA, tA->GetV1(), td->GetV1());
+g->Draw("ap");
+}
