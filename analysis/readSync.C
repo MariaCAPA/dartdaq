@@ -2,37 +2,32 @@
 #include <TTree.h>
 #include <TGraph.h>
 
-//////////////////// ANAIS
-TH1F * pulse1, *pulse2, *pulse3, *pulse4;
-double t1,t2,t3,t4,t5,t6;
-double liveTime;
-double bsl1, rms1, bsl2, rms2, bsl3, rms3;
-TTree * tA;
-
-
-/////////////////// NEW DAQ
-std::vector<TH1S> * pul;
 int i=0;
-int nSamples=0;
-std::string rootBaseName = "../analyzed/output";
-
-
+//////////////////// ANAIS
+TTree * tA;
 int runAnais;
-int runND;
 
+/////////////////// Anod
+TChain * td;
+int NDetAnod = 2; // CHANGE HERE
+int runAnod;
+std::vector<TH1S> * pul;
+int nSamples=0;
+std::string AnodBaseName = "../analyzed/output";
+std::string AnaisBaseName = "flux";
+TCanvas * cPulsesN=0;
+
+// aux for syncronize
 double delta;
 
-TCanvas * cPulsesN=0;
-int NDetNew = 2;
 
-TChain * td;
-TTree * readND(int run)
+TTree * readAnod(int run, std::string anodbasename=AnodBaseName)
 {
   td = new TChain("td");
   int maxPartial = 9999;
   for (int parcial=0; parcial<maxPartial; parcial++)
   {
-    std::string filename = rootBaseName + Form("_%06d_%04d.root", run, parcial);
+    std::string filename = AnodBaseName + Form("_%06d_%04d.root", run, parcial);
     std::cout << " adding " << filename.c_str() ;
     if (access(filename.c_str(), F_OK)==-1) { std::cout << " .. not found. Stop" << std::endl; break;}
     td->Add(filename.c_str(), -1);
@@ -43,11 +38,11 @@ TTree * readND(int run)
   td->SetBranchAddress("pulse",&pul);
   td->GetEntry(0);
   nSamples=(*pul)[0].GetNbinsX();
-  std::cout << " to visualize pulses use drawPulsesND(i++) " << std::endl;
+  std::cout << " to visualize pulses use drawPulsesAnod(i++) " << std::endl;
   return td;
 }
 
-void drawPulsesNDch(int i, int ch=0)
+void drawPulsesAnodch(int i, int ch=0)
 {
   td->GetEntry(i);
   //TGraph * gg = new TGraph(nSamples);
@@ -56,23 +51,23 @@ void drawPulsesNDch(int i, int ch=0)
   (*pul)[ch].Draw();
 
 }
-void drawPulsesND(int i)
+void drawPulsesAnod(int i)
 {
-  if (!cPulsesN) {cPulsesN=new TCanvas(); cPulsesN->Divide(2,NDetNew);}
-  for (int jj=0; jj<NDetNew*2; jj++)
+  if (!cPulsesN) {cPulsesN=new TCanvas(); cPulsesN->Divide(2,NDetAnod);}
+  for (int jj=0; jj<NDetAnod*2; jj++)
   {
     cPulsesN->cd(jj+1);
-    drawPulsesNDch(i, jj);
+    drawPulsesAnodch(i, jj);
   }
 }
 // look for pulse syncronized with i and draw both
 void drawPulsesAnaSyn(int i)
 {
-  int nn = tA->Draw("NDEvent",Form("Entry$==%d",i),"goff");
+  int nn = tA->Draw("AnodEvent",Form("Entry$==%d",i),"goff");
   if (nn==0 || tA->GetV1()[0]==-1) {std::cout << " not found. " << std::endl; return;}
   int evN = tA->GetV1()[0];
   drawPulses(i);
-  drawPulsesND(evN);
+  drawPulsesAnod(evN);
   std::cout << " anais event: " << i << std::endl;
   std::cout << " new DAQ event: " << evN << std::endl;
 
@@ -80,78 +75,14 @@ void drawPulsesAnaSyn(int i)
 
 
 
-TChain* loadTFIII(int run)
+TTree * readAnais(int run, std::string anaisbasename=AnaisBaseName)
 {
-  std::string fn;
-  //fn = Form("flux.%04d.??.a.root",run);
-  fn = Form("flux.%04d.*.a.root",run);
-  return load(fn.c_str(),1,0);
-}
-
-
-
-TTree * readAnais(int run)
-{
-TFile *f;
-  tA = loadTFIII(run);
+  std::string fn = Form("%s.%04d.*.a.root",AnaisBaseName.c_str(), run);
+  std::cout << " reading " << fn.c_str() << std::endl;
+  tA = load(fn.c_str(),1,0);
   std::cout << " to visualize events use drawPulses(i++)"<<std::endl;
   return tA;
 }
-
-void read_entry_long(int i, const char * namelist="list")
-{
-  TEventList * list = (TEventList*)(gDirectory->Get(namelist));
-  TEventList * old = (TEventList*)(tA->GetEventList());
- 
-  if(list)
-  {
-      tA->SetEventList(list);
-      tA->GetEntry(tA->GetEntryNumber(i));
-  }
-  else
-  {
-     tA->GetEntry(i);
-  }
-
-  //tA->GetEntry(i); 
-  pulse1->Draw(); 
-  pulse2->Draw("same"); 
-  pulse3->Draw("same");
-  if (pulse4) pulse4->Draw("same");
-  std::cout << " t1: " << t1 << " us " << std::endl;
-  std::cout << " t2: " << t2 << " us " << std::endl;
-  std::cout << " t3: " << t3 << " us " << std::endl;
-  std::cout << " t4: " << t4 << " us " << std::endl;
-  if (pulse4)
-  {
-    std::cout << " t5: " << t5 << " us " << std::endl;
-    std::cout << " t6: " << t6 << " us " << std::endl;
-  }
-  std::cout << " bsl1: " << bsl1 << " rms1: " << rms1 << " adc " << std::endl;
-  std::cout << " bsl2: " << bsl2 << " rms2: " << rms2 << " adc " << std::endl;
-  std::cout << " bsl3: " << bsl3 << " rms3: " << rms3 << " adc " << std::endl;
-  std::cout << " liveTime: " << liveTime << " s " << std::endl;
-
-  TLine * l1 = new TLine(0,bsl1-5*rms1, pulse1->GetBinLowEdge(pulse1->GetNbinsX()), bsl1-5*rms1);
-  l1->SetLineColor(kYellow);
-  l1->Draw();
-
-  TLine * l2 = new TLine(0,bsl2-5*rms2, pulse2->GetBinLowEdge(pulse2->GetNbinsX()), bsl2-5*rms2);
-  l2->SetLineColor(kCyan);
-  l2->Draw();
-
-  TLine * l3 = new TLine(0,bsl3-5*rms3, pulse3->GetBinLowEdge(pulse3->GetNbinsX()), bsl3-5*rms3);
-  l3->SetLineColor(kRed);
-  l3->Draw();
-  
-  if (t1>0) {TMarker *m1 = new TMarker(t1, bsl1,23);m1->SetMarkerColor(kYellow); m1->Draw();}
-  if (t2>0) {TMarker *m2 = new TMarker(t2, bsl2,23);m2->SetMarkerColor(kCyan); m2->Draw();}
-  if (t3>0) {TMarker *m3 = new TMarker(t3, bsl3,23);m3->Draw();}
-  if (t4>0) {TMarker *m4 = new TMarker(t4, bsl3,23);m4->Draw();}
-
-  tA->SetEventList(old);
-}
-
 
 void syncronize()
 {
@@ -161,7 +92,7 @@ void syncronize()
   Double_t * timeN = td->GetV1();
 
   TNtuple * tdAux = new TNtuple("tdAux","ident anais events","AEvent"); // for every new daq event, AEvent is the corresponding ANAIS event
-  TNtuple * tAAux = new TNtuple("tAAux","ident new daq events","NDEvent"); // for every ANAIS event, AEvent is the corresponding new daq event
+  TNtuple * tAAux = new TNtuple("tAAux","ident anod events","AnodEvent"); // for every ANAIS event, AEvent is the corresponding anod event
 
   int iA = 0;
   int iN = 0;
@@ -189,7 +120,7 @@ void syncronize()
     // check that it is a coincident event, or there is none
     if (!stop && delta+timeN[iN]>timeA[iA]+epsilon)
     {
-      std::cout << "no event found in new daq for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with new daq: " << timeA[iA]- delta-timeN[iN] << std::endl;
+      std::cout << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- delta-timeN[iN] << std::endl;
       tAAux->Fill(-1);
     }
     else if (!stop)
@@ -207,11 +138,11 @@ void syncronize()
   while (iN<nN) {iN++; tdAux->Fill(-1);}
 
   // write to disk
-  std::string filenameN = rootBaseName + Form("_%06d_Ana.root", runND);
+  std::string filenameN = AnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
   TFile * fN = new TFile(filenameN.c_str(), "recreate");
   tdAux->Write();
   fN->Close();
-  std::string filenameA = Form("flux.%04d_Anod.root",runAnais);
+  std::string filenameA = AnaisBaseName + Form(".%04d_AnodInfo.root",runAnais);
   TFile * fA = new TFile(filenameA.c_str(), "recreate");
   tAAux->Write();
   fA->Close();
@@ -219,22 +150,25 @@ void syncronize()
 }
 ///////////////////////// SYNC
 
-void readSync(int rAna, int rNew)
+void readSync(int rAna, int rNew,std::string anaisbasename=AnaisBaseName, std::string anodbasename=AnodBaseName)
 {
+  AnaisBaseName = anaisbasename;
+  AnodBaseName = anodbasename;
   runAnais = rAna;
-  runND=rNew;
+  runAnod=rNew;
   readAnais(runAnais);
-  readND(runND);
+  readAnod(runAnod);
   std::cout << " ANAIS tree : tA, New DAQ tree: td " << std::endl;
 
   // syncronize. If files does not exists, create them
-  std::string filenameN = rootBaseName + Form("_%06d_Ana.root", runND);
-  std::string filenameA = Form("flux.%04d_Anod.root",runAnais);
+  std::string filenameN = AnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
+  std::string filenameA = AnaisBaseName + Form(".%04d_AnodInfo.root",runAnais);
   if (access(filenameN.c_str(), F_OK)==-1 || access(filenameA.c_str(), F_OK)==-1) 
   {  
     std::cout << " .. synchronizing..." << std::endl; 
     syncronize();
   }
+  std::cout << " reading friend trees with syncronized events " << std::endl;
   TFile * fA = new TFile(filenameA.c_str(), "read");
   TTree * tAAux = (TTree*)fA->Get("tAAux");
   TFile * fN = new TFile(filenameN.c_str(), "read");
@@ -273,7 +207,7 @@ hn0A->SetLineColor(kRed);
 hn0->Draw();
 hn0A->Draw("same");
 c = new TCanvas(); 
-int nselA = tA->Draw("area00","NDEvent>-1","goff");
+int nselA = tA->Draw("area00","AnodEvent>-1","goff");
 int nselN = td->Draw("area[0]","AEvent>-1","goff");
 TGraph * g = new TGraph(nselA, tA->GetV1(), td->GetV1());
 g->Draw("ap");
