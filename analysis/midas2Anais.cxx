@@ -221,7 +221,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
     for (int i=0; ; ++i) {
       char ch = midasFilename[i];
         if (!ch) break;
-        if (ch == '/') {
+        if (ch == '/' || num[0]==112) { // skip 112 in the name!!
           // skip numbers in the directory name
           num[0] = num[1] = in_num = part = 0;
         } else if (ch >= '0' && ch <= '9' && part < 2) {
@@ -238,7 +238,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
                   << ") disagrees with MIDAS run (" << run << ")" << std::endl;
         exit(1);
       }
-      sprintf(buff,"output_%.6d_%.4d.root", run, num[1]);
+      sprintf(buff,"Anod112DM_%.6d_%.4d.root", run, num[1]);
       printf("Using filename %s\n",buff);
     } else {
       sprintf(buff,"output_%.6d.root", run);
