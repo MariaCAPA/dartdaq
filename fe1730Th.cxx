@@ -633,6 +633,7 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
 
   // MARIA write 1 in GPO register
   // To start synchornized DAQ with ANAIS
+  // -> write 0 en 0x8110 and write 0xc000 in 0x811c
   request = 0;
   status = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
   if (status != CAEN_DGTZ_Success) 
@@ -802,6 +803,8 @@ void * readThread(void * arg)
 //if (verbose) std::cout << " buffer handle " << rb_handle << " level " << rb_level << std::endl;
       // VERBOSE
       //std::cout << " buffer level " << rb_level << std::endl;
+      // If the circular buffer is almost full, do not read more events, to allow 
+      // the other thread to empty the circular buffer
       if(rb_level > (int)(rb_event_buffer_size*0.75))  // 0.75!!
       {
         // VERBOSE
@@ -967,8 +970,10 @@ INT readEvent(void * wp)
     if (ret != CAEN_DGTZ_Success) 
     {
       printf("Warning: Failure reading reg:%x (%d)\n", CAEN_DGTZ_ACQ_STATUS_ADD, ret);
-      cm_msg(MERROR,"ReadEvent", "Communication error: %d", ret);
-      return (ret == CAEN_DGTZ_Success);
+      cm_msg(MERROR,"ReadEvent", "Failure reading reg 0x8104. Communication error: %d", ret);
+      //return (ret == CAEN_DGTZ_Success);
+      // Maria 250723 Do not exit. Just print error and return
+      return  CAEN_DGTZ_Success;
     }
     else 
     {
