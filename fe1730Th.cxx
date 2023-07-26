@@ -973,7 +973,7 @@ INT readEvent(void * wp)
       cm_msg(MERROR,"ReadEvent", "Failure reading reg 0x8104. Communication error: %d", ret);
       //return (ret == CAEN_DGTZ_Success);
       // Maria 250723 Do not exit. Just print error and return
-      return  CAEN_DGTZ_Success;
+      return  1;
     }
     else 
     {
