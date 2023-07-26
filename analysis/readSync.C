@@ -9,12 +9,12 @@ int runAnais;
 
 /////////////////// Anod
 TChain * td;
-int NDetAnod = 2; // CHANGE HERE
+int NDetAnod = 4; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
 int nSamples=0;
-std::string AnodBaseName = "../analyzed/output";
-std::string AnaisBaseName = "flux";
+std::string AnodBaseName = "./Anod112DM";
+std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 TCanvas * cPulsesN=0;
 
 // aux for syncronize
@@ -121,6 +121,7 @@ void syncronize()
     if (!stop && delta+timeN[iN]>timeA[iA]+epsilon)
     {
       std::cout << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- delta-timeN[iN] << std::endl;
+      std::cout << std::flush;
       tAAux->Fill(-1);
     }
     else if (!stop)
