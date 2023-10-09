@@ -132,7 +132,7 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
                 bslCambiante = 0;
                 rmsCambiante = 0;
 
-               /* for(l = 0; l < nSamples - nPtsBsl; l++)
+              /* for(l = 0; l < nSamples - nPtsBsl; l++)
                 {
                         if(l < tFix - nPtsBsl || l > tFix + tWin)
                         {
@@ -148,12 +148,12 @@ void TEventMusic::ProcessMusicEvent(TV1730RawData * V1730, int *config, double *
 		                        bslRmsMin = bslCambiante;
 		                }
                         }
-                }*/
+                }
 
                 bsl[j] = bslRmsMin;
                 
                 rms[j] = rmsMin;
-                
+                */
                 bslTot=0;
                 bslTotF=0;
 
