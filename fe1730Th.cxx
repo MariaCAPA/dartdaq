@@ -44,6 +44,9 @@ typedef int INT32;
 // If 1, bouard will use the external clock
 #define EXT_CLK 1
 
+// if 1, trigger will be enabled at the begining of the run and disabled at the end
+#define DISABLE_TRIGGER 1
+
 
 
 // Max event size  supported (in bytes).
@@ -289,8 +292,8 @@ std::cout << " polled " << std::endl;
 
   ////////////////////////
   // Open VME interface, init link board_number
-  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
+  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
+  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
   if (ret != CAEN_DGTZ_Success) 
   { 
     std::cout << " Error opening Digitizer. Digitizer error code: " << ret << std::endl;
@@ -631,6 +634,7 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
 
   printf("End of begin_of_run\n");
 
+  // ENABLE TRIGGER 
   // MARIA write 1 in GPO register
   // To start synchornized DAQ with ANAIS
   // -> write 0 en 0x8110 and write 0xc000 in 0x811c
@@ -647,7 +651,8 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   // write 1 in bit [15] (test logic level)
   // write 01 in bits [22 21] of 0x811C  to request trigger options in event header
   // -> 0x20C000
-  request = 0x20C000;
+  // Do not request trigger options by now
+  request = 0xC000;
   //////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////
@@ -657,7 +662,7 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   // eliminar esta linea
   // request |= 0x00000400;
   ///////////// PERO HOY POR HOY NO FUNCIONA
-
+ 
   status = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_FP_IO_CONTROL, request); // 0x811C
   if (status != CAEN_DGTZ_Success) 
   {  
@@ -669,11 +674,11 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
   if (ret != CAEN_DGTZ_Success) 
   {  
     std::cout << " Failure reading FP_IO register (0x811C). Digitizer error code: " << ret << std::endl; 
-    frontend_exit();
+   frontend_exit();
     exit(1);
   }
-  std::cout << " FP_IO CONTROL REGISTER (0x811C) : " << request << std::endl;
-
+  std::cout << "TRIGGER ENABLED.  FP_IO CONTROL REGISTER (0x811C) : " << request << std::endl;
+  
   //////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////
@@ -742,25 +747,29 @@ INT end_of_run(INT run_number, char *error)
     //Reset all IRQs    
   }
 
-  // MARIA write 0 in GPO register
-  // put flag to low to synchronize DAQ with ANAIS for next run
-  uint32_t request = 0;
-  int answer = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
-  if (answer != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure writing GPO register (0x8110) to " << request << ". Digitizer error code: " << answer << std::endl; 
-    frontend_exit();
-    exit(1);
+  if (DISABLE_TRIGGER)
+  {
+    // DISABLE TRIGGER
+    // MARIA write 0 in GPO register
+    // put flag to low to synchronize DAQ with ANAIS for next run
+    uint32_t request = 0;
+    int answer = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
+    if (answer != CAEN_DGTZ_Success) 
+    {  
+      std::cout << " Failure writing GPO register (0x8110) to " << request << ". Digitizer error code: " << answer << std::endl; 
+      frontend_exit();
+      exit(1);
+    }
+    request = 0x8000;
+    answer = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_FP_IO_CONTROL, request); // 0x811C
+    if (answer != CAEN_DGTZ_Success) 
+    {  
+      std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << answer << std::endl; 
+      frontend_exit();
+      exit(1);
+    }
   }
-  request = 0x8000;
-  answer = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_FP_IO_CONTROL, request); // 0x811C
-  if (answer != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << answer << std::endl; 
-    frontend_exit();
-    exit(1);
-  }
-
+  
   return SUCCESS;
 }
 
@@ -836,7 +845,7 @@ void * readThread(void * arg)
 
     // TODO MARIA check
     // Sleep for 5us to avoid hammering the board too much
-    //usleep(1);
+    usleep(1);
 
   }
 
@@ -927,7 +936,7 @@ INT poll_event(INT source, INT count, BOOL test)
 
   if (evtReady && !test) return 1;
   //usleep(20); // MARIA TEST CFC 080422
-  //usleep(20); // MARIA TODO
+  usleep(20); // MARIA 270723. TODO
   return 0;
 
 }
@@ -965,15 +974,27 @@ INT readEvent(void * wp)
   }
   else 
   {
-    uint32_t lstatus;
+    uint32_t lstatus=0;
     ret = CAEN_DGTZ_ReadRegister(VMEhandle, CAEN_DGTZ_ACQ_STATUS_ADD, &lstatus);
     if (ret != CAEN_DGTZ_Success) 
     {
       printf("Warning: Failure reading reg:%x (%d)\n", CAEN_DGTZ_ACQ_STATUS_ADD, ret);
-      cm_msg(MERROR,"ReadEvent", "Failure reading reg 0x8104. Communication error: %d", ret);
-      //return (ret == CAEN_DGTZ_Success);
+      cm_msg(MERROR,"ReadEvent", "Failure reading reg 0x8104. Communication error: %d . Read status: %d ", ret, lstatus);
+      // MARIA 270723 check if daq is runing, bit 2 status 
+      // 050923 EL PC SE CUELGA. LO ELIMINO
+      /*
+      if ((lstatus & (1<<2) ) ==0)
+      { 
+        std::cout << "DAQ stopped.  clear data and start daq again " << std::endl;
+	    CAEN_DGTZ_ClearData(VMEhandle);
+	    CAEN_DGTZ_SWStartAcquisition(VMEhandle);
+        usleep(300000); // MARIA 130422
+        return  1;
+      }
+      */
+      return (ret == CAEN_DGTZ_Success);
       // Maria 250723 Do not exit. Just print error and return
-      return  1;
+      //return  1;
     }
     else 
     {

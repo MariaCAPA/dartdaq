@@ -2,8 +2,8 @@
 # Example Makefile for ROOTANA-based projects
 #
 
-#CXXFLAGS = -g  -Wall -Wuninitialized -fPIC
-CXXFLAGS =  -O2 -Wall -Wuninitialized -fPIC
+CXXFLAGS = -g  -Wall -Wuninitialized -fPIC
+#CXXFLAGS =  -O2 -Wall -Wuninitialized -fPIC
 
 # required ZLIB library
 

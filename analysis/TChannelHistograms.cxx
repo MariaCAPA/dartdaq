@@ -5,6 +5,7 @@
 #include "TDirectory.h"
 #include "TH2D.h"
 #include "TEventProcessor.hxx"
+#include "TROOT.h"
 
 
 const int numberChannelPerModule = 16;
@@ -46,7 +47,7 @@ void THistoArea::CreateHistograms()
  
       sprintf(title,"Histo Area channel=%i",i);
       
-      TH1D *tmp = new TH1D(name, title, 5000, 0,500000);
+      TH1D *tmp = new TH1D(name, title, 1000, 0,3e6);
       tmp->SetXTitle("Area (ADC*sample value)");
       tmp->SetYTitle("Counts");
       
@@ -60,6 +61,11 @@ void THistoArea::UpdateHistograms(TDataContainer& dataContainer)
   for(unsigned int i = 0; i < dev->channel.size(); i++)
   {
     GetHistogram(dev->channel[i].ch)->Fill(dev->channel[i].area);
+    if (gROOT)
+    {
+        TCanvas * aux = (TCanvas*)(gROOT->FindObject(Form("Canvas_1_0_%d",i+1)));
+        if (aux) aux->SetLogy(1);
+    }
   }
 }
 
@@ -121,7 +127,6 @@ TCanvasHandleBase* THistoArea::CreateCanvas()
     canvas->SetGroupName("Group");
     canvas->SetChannelName("Channel");
     //canvas->HandleChangedNumberOfHistos();
-
     return canvas;
 
 }
@@ -177,6 +182,11 @@ void THistoAreaSummary::UpdateHistograms(TDataContainer& dataContainer)
   TAEvent * dev = TEventProcessor::instance()->GetAEvent();
 
   GetHistogram(0)->Fill(dev->areaS);
+    if (gROOT)
+    {
+      TCanvas * aux = (TCanvas*)(gROOT->FindObject("Canvas_1_0"));
+      if (aux) aux->SetLogy(1);
+    }
 
 }
 
