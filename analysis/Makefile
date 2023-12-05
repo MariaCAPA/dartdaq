@@ -69,9 +69,9 @@ OBJS += TChannelHistograms.o
 OBJS += TAReadRun.o 
 OBJS += TAVisu.o 
 
-all: $(OBJS) wfViewer.exe midas2root.exe midas2Anais.exe wfAverage.exe dartlib.so
+all: $(OBJS) wfViewer.exe midas2root.exe midas2Anais.exe wfAverage.exe libAnod.so
 
-lib: dartlib.so
+lib: libAnod.so
 
 wfViewer.exe: wfViewer.cxx TAEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
@@ -90,13 +90,12 @@ midas2Anais.exe: midas2Anais.cxx TAEventDict.cxx $(OBJS)
 
 %Dict.cxx: TV1730Waveform.hxx TAAnaManager.hxx  TAReadRun.hxx TAVisu.hxx
 	#rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx $^ $*_LinkDef.h
-	rootcint -f $@ -c -I. $(INCFLAGS) $*.hxx $^ $*_LinkDef.h
+	rootcling -f $@ -c -I. $(INCFLAGS) $*.hxx $^ $*_LinkDef.h
 
 %.o: %.cxx
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) -c $<
 
-#dartlib.so: TAEventDict.cxx TAEvent.hxx 
-dartlib.so: *.cxx *.hxx
+libAnod.so: *.cxx *.hxx
 	$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  TAEventDict.cxx $(OBJS) $(LIBS) $(ROOTGLIBS) 
 	#$(CXX) $(CXXFLAGS) $(INCFLAGS) -shared -o $@  $^
 

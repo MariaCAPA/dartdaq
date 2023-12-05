@@ -293,7 +293,8 @@ std::cout << " polled " << std::endl;
   ////////////////////////
   // Open VME interface, init link board_number
   //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
-  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
+  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
+  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 1, 0,0, &VMEhandle); // Anod PC 12/24, frontal USB
   if (ret != CAEN_DGTZ_Success) 
   { 
     std::cout << " Error opening Digitizer. Digitizer error code: " << ret << std::endl;
