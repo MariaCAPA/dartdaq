@@ -2,7 +2,6 @@
 #include <TTree.h>
 #include <TGraph.h>
 
-int i=0;
 //////////////////// ANAIS
 TTree * tA;
 int runAnais;
@@ -12,14 +11,14 @@ TChain * td;
 int NDetAnod = 4; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
-int nSamples=0;
-std::string AnodBaseName = "./Anod112DM";
+//std::string AnodBaseName = "./Anod112DM";
+std::string AnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
+//std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 TCanvas * cPulsesN=0;
 
-// aux for syncronize
-double delta;
 
+double CORRECTION_FACTOR = 0.99999788; // set to 1 for same clock
 
 TTree * readAnod(int run, std::string anodbasename=AnodBaseName)
 {
@@ -37,7 +36,6 @@ TTree * readAnod(int run, std::string anodbasename=AnodBaseName)
 
   td->SetBranchAddress("pulse",&pul);
   td->GetEntry(0);
-  nSamples=(*pul)[0].GetNbinsX();
   std::cout << " to visualize pulses use drawPulsesAnod(i++) " << std::endl;
   return td;
 }
@@ -45,9 +43,6 @@ TTree * readAnod(int run, std::string anodbasename=AnodBaseName)
 void drawPulsesAnodch(int i, int ch=0)
 {
   td->GetEntry(i);
-  //TGraph * gg = new TGraph(nSamples);
-  //for (int j=0; j<nSamples; j++) gg->SetPoint(j,j,(*pul)[ch][j]);
-  //gg->Draw("al");
   (*pul)[ch].Draw();
 
 }
@@ -80,28 +75,35 @@ TTree * readAnais(int run, std::string anaisbasename=AnaisBaseName)
   std::string fn = Form("%s.%04d.*.a.root",AnaisBaseName.c_str(), run);
   std::cout << " reading " << fn.c_str() << std::endl;
   tA = load(fn.c_str(),1,0);
+  tA->SetEstimate(tA->GetEntries());
   std::cout << " to visualize events use drawPulses(i++)"<<std::endl;
   return tA;
 }
 
-void syncronize()
+void sync()
 {
+  // open info file
+  std::string outfile = AnodBaseName + Form("_%06d_sync.dat", runAnod);
+  fstream fq(outfile.c_str(), ios::out);
+
   tA->Draw("RT0*50.","","goff");
   td->Draw("timeNs","","goff");
   Double_t * timeA = tA->GetV1();
   Double_t * timeN = td->GetV1();
 
-  TNtuple * tdAux = new TNtuple("tdAux","ident anais events","AEvent"); // for every new daq event, AEvent is the corresponding ANAIS event
-  TNtuple * tAAux = new TNtuple("tAAux","ident anod events","AnodEvent"); // for every ANAIS event, AEvent is the corresponding anod event
+  TNtuple * tdAux = new TNtuple("tdAux","ident anais events","AEvent:timeAnais"); // for every new daq event, AEvent is the corresponding ANAIS event
+  TNtuple * tAAux = new TNtuple("tAAux","ident anod events","AnodEvent:timeAnod"); // for every ANAIS event, AEvent is the corresponding anod event
 
   int iA = 0;
   int iN = 0;
-  delta = timeA[iA]-timeN[iN];
-  tdAux->Fill(iA); 
-  tAAux->Fill(iN); 
+  double deltaIni = timeA[iA]-timeN[iN]/CORRECTION_FACTOR;
+  double delta = deltaIni; // allow to vary along the file to adjust loss of ticks
+  tdAux->Fill(iA,timeA[iA]); 
+  tAAux->Fill(iN,timeN[iN]/CORRECTION_FACTOR+deltaIni); 
   iN++;
 
-  double epsilon = 100; //  ns max different among coincident events (2 ticks)
+  //double epsilon = 100; //  ns max different among coincident events (2 ticks)
+  double epsilon = 1000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
 
   int nA = tA->GetEntries();
   int nN = td->GetEntries();
@@ -110,24 +112,30 @@ void syncronize()
 
   for (iA=1; iA<nA; iA++)
   {
-    while (!stop && timeA[iA]-epsilon>delta+timeN[iN]) 
+    //while (!stop && fabs(timeA[iA]-deltaIni-timeN[iN]/CORRECTION_FACTOR) > epsilon) 
+    while (!stop && timeA[iA]-epsilon>delta+timeN[iN]/CORRECTION_FACTOR)  // timeN should be larger than timeA
     {
-      tdAux->Fill(-1);
+      tdAux->Fill(-1,-1);
       iN++; 
       if (iN==nN) stop = 1;
     }
 
     // check that it is a coincident event, or there is none
-    if (!stop && delta+timeN[iN]>timeA[iA]+epsilon)
+    if (!stop && delta+timeN[iN]/CORRECTION_FACTOR>timeA[iA]+epsilon)
+    //if (!stop && fabs(timeA[iA] - deltaIni - timeN[iN]/CORRECTION_FACTOR) > epsilon)
     {
-      std::cout << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- delta-timeN[iN] << std::endl;
-      std::cout << std::flush;
-      tAAux->Fill(-1);
+      fq << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR << " delta  - deltaIni: " << deltaIni - delta << std::endl;
+      fq << std::flush;
+      tAAux->Fill(-1,-1);
     }
     else if (!stop)
     {
-      tAAux->Fill(iN);
-      tdAux->Fill(iA);
+      tAAux->Fill(iN,timeN[iN]/CORRECTION_FACTOR+deltaIni);
+      tdAux->Fill(iA,timeA[iA]);
+      // readjust delta for the search of coincidences, to allow for progressive tick loss
+      delta = timeA[iA]-timeN[iN]/CORRECTION_FACTOR;
+      fq << " Anais event " << iA << " -->  anod event " << iN << " delta - deltaIni: " << delta-deltaIni << std::endl;
+
       iN++;
       if (iN==nN) stop = 1;
     }
@@ -135,8 +143,8 @@ void syncronize()
   }
 
   // fill the tree that is not finish yet
-  while (iA<nA) {iA++; tAAux->Fill(-1);}
-  while (iN<nN) {iN++; tdAux->Fill(-1);}
+  while (iA<nA) {iA++; tAAux->Fill(-1,-1);}
+  while (iN<nN) {iN++; tdAux->Fill(-1,-1);}
 
   // write to disk
   std::string filenameN = AnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
@@ -147,6 +155,8 @@ void syncronize()
   TFile * fA = new TFile(filenameA.c_str(), "recreate");
   tAAux->Write();
   fA->Close();
+
+  fq.close();
   
 }
 ///////////////////////// SYNC
@@ -167,7 +177,7 @@ void readSync(int rAna, int rNew,std::string anaisbasename=AnaisBaseName, std::s
   if (access(filenameN.c_str(), F_OK)==-1 || access(filenameA.c_str(), F_OK)==-1) 
   {  
     std::cout << " .. synchronizing..." << std::endl; 
-    syncronize();
+    sync();
   }
   std::cout << " reading friend trees with syncronized events " << std::endl;
   TFile * fA = new TFile(filenameA.c_str(), "read");
