@@ -53,7 +53,8 @@ int main()
 
   ////////////////////////
   // Open VME interface, init link board_number
-  int ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
+  //int ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
+  int ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 1, 0,0, &VMEhandle); // Anod PC 12/24, frontal USB
   int status;
   uint32_t request = 0;
 

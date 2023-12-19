@@ -4,7 +4,7 @@
 #   start mhttpd on default port. (Mongoose https version)
 mhttpd  -D  -e anais # you can optionally restrict access to localhost and other specified hosts - see mhttpd
 # fe1730Th -e anais
-#xterm -e fe1730Th -e anais&
+xterm -e fe1730Th -e anais&
 xterm -e wfViewer.exe -Eanais&
 sleep 1
 mlogger -D -e anais
