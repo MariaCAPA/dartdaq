@@ -12,7 +12,7 @@ int NDetAnod = 4; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
 //std::string AnodBaseName = "./Anod112DM";
-std::string AnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
+std::string AnodBaseName = "/media/storage/data/Anod112DMtest/Anod112DM";//"/media/storage/data/Anod112DM_analyzed/Anod112DM";
 //std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 TCanvas * cPulsesN=0;
@@ -163,6 +163,8 @@ void sync()
 
 void readSync(int rAna, int rNew,std::string anaisbasename=AnaisBaseName, std::string anodbasename=AnodBaseName)
 {
+  gSystem->Load("libAnod"); //IVAN 19122023
+  
   AnaisBaseName = anaisbasename;
   AnodBaseName = anodbasename;
   runAnais = rAna;
