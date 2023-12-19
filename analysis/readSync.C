@@ -18,7 +18,8 @@ std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 TCanvas * cPulsesN=0;
 
 
-double CORRECTION_FACTOR = 0.99999788; // set to 1 for same clock
+//double CORRECTION_FACTOR = 0.99999788; // set to 1 for same clock
+double CORRECTION_FACTOR = 1;
 
 TTree * readAnod(int run, std::string anodbasename=AnodBaseName)
 {
@@ -103,7 +104,8 @@ void sync()
   iN++;
 
   //double epsilon = 100; //  ns max different among coincident events (2 ticks)
-  double epsilon = 1000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
+  //double epsilon = 1000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
+  double epsilon = 8000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
 
   int nA = tA->GetEntries();
   int nN = td->GetEntries();
@@ -124,7 +126,7 @@ void sync()
     if (!stop && delta+timeN[iN]/CORRECTION_FACTOR>timeA[iA]+epsilon)
     //if (!stop && fabs(timeA[iA] - deltaIni - timeN[iN]/CORRECTION_FACTOR) > epsilon)
     {
-      fq << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR << " delta  - deltaIni: " << deltaIni - delta << std::endl;
+      fq << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR <<  std::endl;
       fq << std::flush;
       tAAux->Fill(-1,-1);
     }
@@ -134,7 +136,7 @@ void sync()
       tdAux->Fill(iA,timeA[iA]);
       // readjust delta for the search of coincidences, to allow for progressive tick loss
       delta = timeA[iA]-timeN[iN]/CORRECTION_FACTOR;
-      fq << " Anais event " << iA << " -->  anod event " << iN << " delta - deltaIni: " << delta-deltaIni << std::endl;
+      fq << " Anais event " << iA << " -->  anod event " << iN << " timeAnais: " << timeA[iA] << " delta - deltaIni: " << delta-deltaIni << std::endl;
 
       iN++;
       if (iN==nN) stop = 1;
@@ -184,8 +186,12 @@ void readSync(int rAna, int rNew,std::string anaisbasename=AnaisBaseName, std::s
   std::cout << " reading friend trees with syncronized events " << std::endl;
   TFile * fA = new TFile(filenameA.c_str(), "read");
   TTree * tAAux = (TTree*)fA->Get("tAAux");
+  if (!tAAux) std::cout << " CANNOT OPEN " << filenameA.c_str() << std::endl;
+  else std::cout << " ----------- added friend " << filenameA.c_str() << std::endl;
   TFile * fN = new TFile(filenameN.c_str(), "read");
   TTree * tdAux = (TTree*)fN->Get("tdAux");
+  if (!tdAux) std::cout << " CANNOT OPEN " << filenameN.c_str() << std::endl;
+  else std::cout << " ----------- added friend " << filenameN.c_str() << std::endl;
   tA->AddFriend(tAAux);
   td->AddFriend(tdAux);
 }
