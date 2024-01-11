@@ -3,7 +3,8 @@
 #include <TGraph.h>
 
 //////////////////// ANAIS
-TTree * tA;
+TChain * tA;
+//TTree * tA;
 int runAnais;
 
 /////////////////// Anod
@@ -12,9 +13,10 @@ int NDetAnod = 4; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
 //std::string AnodBaseName = "./Anod112DM";
-std::string AnodBaseName = "/media/storage/data/Anod112DMtest/Anod112DM";//"/media/storage/data/Anod112DM_analyzed/Anod112DM";
-//std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
+//std::string AnodBaseName = "/media/storage/data/Anod112DMtest/Anod112DM";//"/media/storage/data/Anod112DM_analyzed/Anod112DM";
+std::string AnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
 std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
+std::string AnaisBaseNameCal = "/media/storage/data/A112DM/A112DMcal";
 TCanvas * cPulsesN=0;
 
 
@@ -27,7 +29,7 @@ TTree * readAnod(int run, std::string anodbasename=AnodBaseName)
   int maxPartial = 9999;
   for (int parcial=0; parcial<maxPartial; parcial++)
   {
-    std::string filename = AnodBaseName + Form("_%06d_%04d.root", run, parcial);
+    std::string filename = anodbasename + Form("_%06d_%04d.root", run, parcial);
     std::cout << " adding " << filename.c_str() ;
     if (access(filename.c_str(), F_OK)==-1) { std::cout << " .. not found. Stop" << std::endl; break;}
     td->Add(filename.c_str(), -1);
@@ -69,8 +71,26 @@ void drawPulsesAnaSyn(int i)
 
 }
 
+//IVAN 09012024
+TTree * readAnais(int run, std::string anaisbasename="")
+{
+  anaisbasename = (run%2 ? AnaisBaseName : AnaisBaseNameCal);
+  tA = new TChain("T");
+  int maxPartial = 9999;
+  for (int parcial=0; parcial<maxPartial; parcial++)
+  {
+    std::string filename = Form("%s.%04d.%02d.a.root",anaisbasename.c_str(), run, parcial);
+    std::cout << " adding " << filename.c_str();
+    if (access(filename.c_str(), F_OK)==-1) { std::cout << " .. not found. Stop" << std::endl; break;}
+    tA->Add(filename.c_str(), -1);
+    std::cout << std::endl;
+  }
+  tA->SetEstimate(tA->GetEntries());
+  std::cout << " to visualize pulses use drawPulses(i++) " << std::endl;
+  return tA;
+}
 
-
+/*
 TTree * readAnais(int run, std::string anaisbasename=AnaisBaseName)
 {
   std::string fn = Form("%s.%04d.*.a.root",AnaisBaseName.c_str(), run);
@@ -80,12 +100,14 @@ TTree * readAnais(int run, std::string anaisbasename=AnaisBaseName)
   std::cout << " to visualize events use drawPulses(i++)"<<std::endl;
   return tA;
 }
+*/
 
 void sync()
 {
   // open info file
-  std::string outfile = AnodBaseName + Form("_%06d_sync.dat", runAnod);
-  fstream fq(outfile.c_str(), ios::out);
+  //std::string outfile = AnodBaseName + Form("_%06d_sync.dat", runAnod);
+  //fstream fq(outfile.c_str(), ios::out);
+  TNtuple * tinfo = new TNtuple("tinfo","sync info","AnaisEv:AnodEv:timeAnais:timeAnod:delta:delta_deltaIni"); // for every new daq event, AEvent is the corresponding ANAIS event
 
   tA->Draw("RT0*50.","","goff");
   td->Draw("timeNs","","goff");
@@ -106,6 +128,7 @@ void sync()
   //double epsilon = 100; //  ns max different among coincident events (2 ticks)
   //double epsilon = 1000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
   double epsilon = 8000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
+  //double epsilon = 16000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
 
   int nA = tA->GetEntries();
   int nN = td->GetEntries();
@@ -126,8 +149,10 @@ void sync()
     if (!stop && delta+timeN[iN]/CORRECTION_FACTOR>timeA[iA]+epsilon)
     //if (!stop && fabs(timeA[iA] - deltaIni - timeN[iN]/CORRECTION_FACTOR) > epsilon)
     {
-      fq << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR <<  std::endl;
-      fq << std::flush;
+      //fq << "no event found in anod for " << iA << " ANAIS event . time_A = " << timeA[iA] << " delta time with anod: " << timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR <<  std::endl;
+      //fq << std::flush;
+      //tinfo->Fill(iA, -1, timeA[iA], timeN[iN]/CORRECTION_FACTOR, timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR, delta-deltaIni);
+      tinfo->Fill(iA, -1, timeA[iA], timeN[iN]/CORRECTION_FACTOR, delta, delta-deltaIni);
       tAAux->Fill(-1,-1);
     }
     else if (!stop)
@@ -136,7 +161,9 @@ void sync()
       tdAux->Fill(iA,timeA[iA]);
       // readjust delta for the search of coincidences, to allow for progressive tick loss
       delta = timeA[iA]-timeN[iN]/CORRECTION_FACTOR;
-      fq << " Anais event " << iA << " -->  anod event " << iN << " timeAnais: " << timeA[iA] << " delta - deltaIni: " << delta-deltaIni << std::endl;
+      //fq << " Anais event " << iA << " -->  anod event " << iN << " timeAnais: " << timeA[iA] << " delta - deltaIni: " << delta-deltaIni << std::endl;
+      //tinfo->Fill(iA, iN, timeA[iA], timeN[iN]/CORRECTION_FACTOR, timeA[iA]- deltaIni-timeN[iN]/CORRECTION_FACTOR, delta-deltaIni);
+      tinfo->Fill(iA, iN, timeA[iA], timeN[iN]/CORRECTION_FACTOR, delta, delta-deltaIni);
 
       iN++;
       if (iN==nN) stop = 1;
@@ -153,26 +180,32 @@ void sync()
   TFile * fN = new TFile(filenameN.c_str(), "recreate");
   tdAux->Write();
   fN->Close();
+
   std::string filenameA = AnaisBaseName + Form(".%04d_AnodInfo.root",runAnais);
   TFile * fA = new TFile(filenameA.c_str(), "recreate");
   tAAux->Write();
   fA->Close();
 
-  fq.close();
+  std::string outfile = AnodBaseName + Form("_%06d_sync.root", runAnod);
+  TFile * finfo = new TFile(outfile.c_str(), "recreate");
+  tinfo->Write();
+  finfo->Close();
+
+ // fq.close();
   
 }
 ///////////////////////// SYNC
 
-void readSync(int rAna, int rNew,std::string anaisbasename=AnaisBaseName, std::string anodbasename=AnodBaseName)
+void readSync(int rAna, int rNew, std::string anaisbasename="", std::string anodbasename="")
 {
   gSystem->Load("libAnod"); //IVAN 19122023
   
-  AnaisBaseName = anaisbasename;
-  AnodBaseName = anodbasename;
-  runAnais = rAna;
+  anaisbasename = (rAna%2 ? AnaisBaseName : AnaisBaseNameCal); //IVAN 09012024
+  anodbasename = AnodBaseName;
+  runAnais=rAna;
   runAnod=rNew;
-  readAnais(runAnais);
-  readAnod(runAnod);
+  readAnais(runAnais,anaisbasename);
+  readAnod(runAnod,anodbasename);
   std::cout << " ANAIS tree : tA, New DAQ tree: td " << std::endl;
 
   // syncronize. If files does not exists, create them

@@ -67,7 +67,7 @@ public:
 #endif
 
 
-  Analyzer() {};
+  Analyzer() {fTree=0;};
 
   virtual ~Analyzer() {};
 
@@ -86,6 +86,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 
     //CreateOutputFile("test");
     // Create a TTree
+    // if (fTree) delete fTree; // segmentation fault
     fTree = new TTree("td",Form("MIDAS data run %d",run));
     fTree->Branch("run",&run);
     fTree->Branch("mult",&mult);
@@ -117,6 +118,9 @@ std::cout << " is offline : " << IsOffline() << std::endl;
         printf("end run %d\n",run);
     fTree->Write();
     CloseRootFile();
+
+    // delete fTree;
+   // si lo borro aquí...segmentation fault
   }
 
 
@@ -193,6 +197,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
       timeNs=(double)fEv->timeNs;
       dt= (double)fEv->dt;
 
+      delete bank;
     }
 
     fTree->Fill();
