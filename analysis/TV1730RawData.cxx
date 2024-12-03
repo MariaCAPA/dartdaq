@@ -4,7 +4,8 @@
 #include <iostream>
 #include <arpa/inet.h>
 
-const int numChannels=16;
+//const int numChannels=16;
+const int numChannels=32;
 TV1730EventHeader::TV1730EventHeader(const uint16_t *data) 
 {
   // header =  word + word +  dword +  ddword = 8 * word
@@ -34,7 +35,7 @@ TV1730RawData::TV1730RawData(int bklen, int bktype, const char *name, void *pdat
   uint32_t num_samples = fHeader.samples;
 
   // fMeasurement
-  for (int i = 0; i < 16; i++) 
+  for (int i = 0; i < numChannels; i++) 
   {
     if (fHeader.channel_mask & (1 << i)) 
     {

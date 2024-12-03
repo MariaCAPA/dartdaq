@@ -30,7 +30,6 @@
 //#include "CAENDigitizer.h"
 //#include "CAENComm.h"
 #include <CAEN_FELib.h>
-#include "v1725Raw.h"
 
 #include "mfe.h"
 

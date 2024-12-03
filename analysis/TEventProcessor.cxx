@@ -77,8 +77,8 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   int nCh =  V1730->GetNChannels();
 
   // loop in channels
-  float bsl[16]; // MARIA 070622
-  float rms[16]; // MARIA 070622
+  float bsl[32]; // MARIA 070622
+  float rms[32]; // MARIA 070622
   for (int i=0; i<nCh; i++) 
   {
     // MARIA 070622
@@ -101,8 +101,8 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   // MARIA 070622 TODO !! write in DB to read it in history
   if (hDB) 
   {
-    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/bsl/bsl", bsl, 16*sizeof(float), 16, TID_FLOAT);
-    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/rms/rms", rms, 16*sizeof(float), 16, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/bsl/bsl", bsl, 32*sizeof(float), 32, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/rms/rms", rms, 32*sizeof(float), 32, TID_FLOAT);
   }
 
   fDartEvent->vetoMult = fDartEvent->vetoChannel.size();

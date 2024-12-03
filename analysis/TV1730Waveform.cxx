@@ -32,7 +32,8 @@ void TV1730Waveform::Initialize()
 
   SetNanosecsPerSample(2); // 500 MHz
   fNSamples = 4000; // default
-  fNChannels=16; // default
+  //fNChannels=16; // default
+  fNChannels=32; // default
   fChannels.clear();
   for (int i=0; i<fNChannels; i++) fChannels.push_back(i);
 
