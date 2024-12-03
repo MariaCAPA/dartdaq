@@ -1,4 +1,4 @@
- struct V1725_CONFIG_SETTINGS {
+ struct V2725_CONFIG_SETTINGS {
     INT       acq_mode;                //!< 0x8100@[ 1.. 0]          // CAEN_DGTZ_ACQ_CONTROL_ADD
     BOOL      front_panel_ttl;         //!< 0x811C@[0]               // CAEN_DGTZ_FRONT_PANEL_IO_CTRL_ADD
     DWORD     board_config;            //!< 0x8000@[19.. 0]          // CAEN_DGTZ_BROAD_CH_CTRL_ADD
@@ -13,12 +13,12 @@
     DWORD     enable_zle;             //!< 0x816C@[31.. 0]           // NO LO TENGO
     DWORD     almost_full;             //!< 0x816C@[31.. 0]          // NO LO TENGO
     //    DWORD     fp_lvds_io_ctrl;   //!< 0x81A0@[31.. 0]          // NO LO TENGO
-    DWORD     selftrigger_threshold[16];//!< 0x1n80@[11.. 0]         // ? CAEN_DGTZ_CHANNEL_THRESHOLD_BASE_ADDRESS
-    DWORD     selftrigger_logic[8];    //!< 0x1n84@[11.. 0]          // ? CAEN_DGTZ_CHANNEL_OV_UND_TRSH_BASE_ADDRESS
-    INT       zle_signed_threshold[16];//!< 0x1n24@[31.. 0]          // ? CAEN_DGTZ_CHANNEL_ZS_THRESHOLD_BASE_ADDRESS
-    INT       zle_bins_before[16];     //!< 0x1n54@[31.. 16]        // ? CAEN_DGTZ_SAM_DAC_SPI_DATA_ADD
-    INT       zle_bins_after[16];      //!< 0x1n58@[15.. 0]         // ? CAEN_DGTZ_SAM_START_CELL_CH0
-    DWORD     dac[16];                 //!< 0x1n98@[15.. 0]         // ? CAEN_DGTZ_CHANNEL_DAC_BASE_ADDRESS
-    BOOL      dynamic_range_2v[16];    //!< 0x1n28@[0]             // ? CAEN_DGTZ_CHANNEL_ZS_NSAMPLE_BASE_ADDRESS 
+    DWORD     selftrigger_threshold[32];//!< 0x1n80@[11.. 0]         // ? CAEN_DGTZ_CHANNEL_THRESHOLD_BASE_ADDRESS
+    DWORD     selftrigger_logic[16];    //!< 0x1n84@[11.. 0]          // ? CAEN_DGTZ_CHANNEL_OV_UND_TRSH_BASE_ADDRESS
+    INT       zle_signed_threshold[32];//!< 0x1n24@[31.. 0]          // ? CAEN_DGTZ_CHANNEL_ZS_THRESHOLD_BASE_ADDRESS
+    INT       zle_bins_before[32];     //!< 0x1n54@[31.. 16]        // ? CAEN_DGTZ_SAM_DAC_SPI_DATA_ADD
+    INT       zle_bins_after[32];      //!< 0x1n58@[15.. 0]         // ? CAEN_DGTZ_SAM_START_CELL_CH0
+    DWORD     dac[32];                 //!< 0x1n98@[15.. 0]         // ? CAEN_DGTZ_CHANNEL_DAC_BASE_ADDRESS
+    BOOL      dynamic_range_2v[32];    //!< 0x1n28@[0]             // ? CAEN_DGTZ_CHANNEL_ZS_NSAMPLE_BASE_ADDRESS 
   } config; //!< instance of config structure
 
