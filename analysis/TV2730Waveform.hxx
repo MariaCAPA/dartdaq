@@ -1,25 +1,25 @@
-#ifndef TV1730Waveform_hxx
-#define TV1730Waveform_hxx
+#ifndef TV2730Waveform_hxx
+#define TV2730Waveform_hxx
 
 #include <string>
 #include "TFancyHistogramCanvas.hxx"
 #include "THistogramArrayBase.h"
 #include "TEventProcessor.hxx"
 
-/// Class for making histograms of raw V1730 waveforms;
+/// Class for making histograms of raw V2730 waveforms;
 /// right now is only for raw data.
-class TV1730Waveform : public THistogramArrayBase {
+class TV2730Waveform : public THistogramArrayBase {
 public:
-  TV1730Waveform();
-  TV1730Waveform(std::string name);
-  virtual ~TV1730Waveform(){};
+  TV2730Waveform();
+  TV2730Waveform(std::string name);
+  virtual ~TV2730Waveform(){};
 
   void Initialize();
   void UpdateHistograms(TDataContainer& dataContainer) override;
-  void UpdateHistograms(TV1730RawData * V1730);
+  void UpdateHistograms(TV2730RawData * V2730);
   void AddHistogramsChannel(TDataContainer &dataContainer, int ch);
-  void AddWaveform(TV1730Waveform* wf);
-  void NormalizeWaveform(TV1730Waveform* wf, int Nev);
+  void AddWaveform(TV2730Waveform* wf);
+  void NormalizeWaveform(TV2730Waveform* wf, int Nev);
 
   /// Getters/setters
   int GetNsecsPerSample() { return nanosecsPerSample; }

@@ -16,7 +16,7 @@ class WfAverage: public TRootanaEventLoop {
 public:
 
   // Histograms to fill
-  TV1730Waveform* fAverage;
+  TV2730Waveform* fAverage;
 
   // Dart event that is being processed
   TDartEvent * fDEv;
@@ -30,7 +30,7 @@ public:
 
   WfAverage() 
   {
-    fAverage = new TV1730Waveform();
+    fAverage = new TV2730Waveform();
     fDEv = 0;
     fFileName = "average"; 
   }

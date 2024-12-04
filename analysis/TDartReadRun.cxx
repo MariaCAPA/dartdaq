@@ -1,5 +1,5 @@
 #include "TDartReadRun.hxx"
-#include "TV1730Waveform.hxx"
+#include "TV2730Waveform.hxx"
 #include <iostream>
 #include "midasio.h"
 
@@ -20,7 +20,7 @@
 // original Get waveform function when the midas event contain just a waveform per channel
 // untill the software buffer is implemented, use the other implementation,
 // and keep this as GetWaveformAuxiliar
-TV1730Waveform *TDartReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump)
+TV2730Waveform *TDartReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump)
 {
   TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
   //manager.AddHistogram(wf);
@@ -75,7 +75,7 @@ TV1730Waveform *TDartReadRun::GetWaveformAuxiliar(int evNo, bool draw, bool dump
 // every midas event will contain only one waveform per channel, 
 // so I can come back to GetWaveform function, that for now is in 
 // GetWaveformAuxiliar
-TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
+TV2730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
 {
   TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
   //manager.AddHistogram(wf);
@@ -139,7 +139,7 @@ TV1730Waveform *TDartReadRun::GetWaveform(int evNo, bool draw, bool dump)
         return 0;
       }
 
-      TV1730RawData *bank = new TV1730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
+      TV2730RawData *bank = new TV2730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
       visu.UpdateHistograms(bank);
         // std::cout << " bank " << bk << " name " << pbk32->fName << " size " << pbk32->fDataSize << " type: " << pbk32->fType << std::endl;
       if (draw) visu.PlotCanvas();
@@ -178,7 +178,7 @@ TDartReadRun::TDartReadRun(int run, std::string rootBaseName, std::string dataBa
   fTree->SetBranchAddress("DartEvent",&fCurrentEv);
 }
 
-TV1730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index, bool draw, bool dump)
+TV2730Waveform *TDartReadRun::GetWaveformFromSelectedEvents(int index, bool draw, bool dump)
 {
   if ((unsigned int)index<fSelectedEvents.size())
   return GetWaveform(fSelectedEvents[index], draw, dump);
@@ -197,9 +197,9 @@ int TDartReadRun::SetSelection (std::string cut)
   return nsel;
 }
 
-TV1730Waveform *TDartReadRun::GetAverageFromSelectedEvents(bool draw, bool dump)
+TV2730Waveform *TDartReadRun::GetAverageFromSelectedEvents(bool draw, bool dump)
 {
-  TV1730Waveform * average = new TV1730Waveform("average");
+  TV2730Waveform * average = new TV2730Waveform("average");
 
   TDartVisu & visu = (TDartVisu&)(TDartVisu::Get());
   TMidasEvent event;
@@ -251,7 +251,7 @@ if (index%100==0) std::cout << " processed " << index << " events " << std::endl
 
   } // end  selected events loop
   
-  TV1730Waveform * average_norm = new TV1730Waveform("average_norm");
+  TV2730Waveform * average_norm = new TV2730Waveform("average_norm");
  
   average_norm->NormalizeWaveform(average, count);
 

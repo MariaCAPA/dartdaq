@@ -1,6 +1,6 @@
 /******************************************************************
 
-  Name:         fe1730.c
+  Name:         fe2730.c
   Created by:   Maria Martinez
 
   Contents:    test code of standarized frontend dealing with
@@ -62,8 +62,8 @@ DWORD VMEBUS_BOARDNO = 0;
 // VME base address 
 //DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
 //DWORD LINK = 1;
-//std::string devicePath = "dig2://caendgtz-usb-51553";
-std::string devicePath = "dig2://caendgtz-usb-52037";
+std::string devicePath = "dig2://caendgtz-usb-51553";
+//std::string devicePath = "dig2://caendgtz-usb-52037";
 
 WORD V2730EVENTID = 1;
 WORD V2730TRIGGERMASK = 0;
@@ -71,7 +71,7 @@ WORD V2730TRIGGERMASK = 0;
 // MARIA 2730
 //int VMEhandle=-1;
 uint64_t dev_handle; // DEVICE HANDLE
-uint64_t *ep_handle=0; // END POINT HANDLE 
+uint64_t ep_handle; // END POINT HANDLE 
 // done MARIA 2730
 
 
@@ -133,7 +133,7 @@ struct EventData * ptEvent=0;
 
 
 // The frontend name (client name) as seen by other MIDAS clients   
-const char *frontend_name = "fe1730";
+const char *frontend_name = "fe2730Th";
 // The frontend file name, don't change it 
 const char *frontend_file_name = __FILE__;
 
@@ -222,7 +222,7 @@ INT readEvent(void * );
 // MARIA 2730
 // New functions for board 2730
 int getBoardInfo(); //  dev_handle is global
-int configureEndPoint(); // set data format, dev_handle and  ep_handle are globals
+int configureEndPoint(uint64_t * ep_handle); // set data format, dev_handle and  ep_handle are globals
 int allocateEvent();
 void freeEvent();
 int printLastError();
@@ -374,17 +374,6 @@ std::cout << " polled " << std::endl;
     return EXIT_FAILURE;
   }
 
-  // MARIA 2730
-  // TODO check if this is the correct place to setup the endpoint
-  // CONFIGURE ENDPOINT
-  // TO SET THE DATA FORMAT
-  printf("configure end point...\t");
-  ret = configureEndPoint();
-  if (ret != CAEN_FELib_Success)
-  {
-    printLastError();
-    return EXIT_FAILURE;
-  }
 
 
 
@@ -564,6 +553,7 @@ INT begin_of_run(INT run_number, char *error)
   printf("record length set to :\t%d\n", testVal);
   if (testVal!=v2730_settings.recordlength) std::cout << " WARNING : RECORD LENGTH SET TO : " << testVal;
   v2730_settings.recordlength = testVal;
+  runInfo.nSamples = testVal;
   // done MARIA 2730
   
   // MARIA 2730
@@ -610,6 +600,25 @@ INT begin_of_run(INT run_number, char *error)
   {
     if (v2730_settings.ch_enable[i])
     {
+       // MARIA 2730
+       // DC Offset goes from 1 to 65535
+       //uint32_t  dcoffset = v2730_settings.ch_bslpercent[i] * 655.35;
+       //ret = CAEN_DGTZ_SetChannelDCOffset(VMEhandle, i, dcoffset);
+       //ret = CAEN_DGTZ_GetChannelDCOffset(VMEhandle, i, &dcoffset);
+       //ret = CAEN_DGTZ_SetChannelTriggerThreshold(VMEhandle, i, v1730_settings.ch_threshold[i]);
+       // In 2730, offset in percentage
+       if ( v2730_settings.ch_bslpercent[i]<0)  v2730_settings.ch_bslpercent[i]=0;
+       if ( v2730_settings.ch_bslpercent[i]>100)  v2730_settings.ch_bslpercent[i]=100;
+     
+       snprintf(par_name, sizeof(par_name), "/ch/%zu/par/dcoffset", (size_t)i);
+       snprintf(value, sizeof(value), "%u", v2730_settings.ch_bslpercent[i]);
+       ret = CAEN_FELib_SetValue(dev_handle, par_name, value);
+       if (ret != CAEN_FELib_Success) return ret;
+       // READ AGAIN
+       ret = CAEN_FELib_GetValue(dev_handle, par_name, value);
+       if (ret != CAEN_FELib_Success) return ret;
+       v2730_settings.ch_bslpercent[i] = atof(value);
+       printf("dc offset ch %d set to :\t%u\n", (int)i, v2730_settings.ch_bslpercent[i] );
 
        // MARIA 2730
        //bool dyn = 0; // default +- 2V
@@ -629,28 +638,13 @@ INT begin_of_run(INT run_number, char *error)
        ret = CAEN_FELib_GetValue(dev_handle, par_name, value);
        if (ret != CAEN_FELib_Success) return ret;
        v2730_settings.ch_gain[i] = pow(10,atof(value)/20.);
-       printf("gain ch %d set to :\t%f\n", (int)i, v2730_settings.ch_gain[i] );
        // READ ADCTOVOLT
        snprintf(par_name, sizeof(par_name), "/ch/%zu/par/adctovolts", (size_t)i);
        ret = CAEN_FELib_GetValue(dev_handle, par_name, value);
        if (ret != CAEN_FELib_Success) return ret;
        runInfo.ADC2Volt[i]=atof(value); 
+       printf("gain ch %d set to :\t%f\n", (int)i, v2730_settings.ch_gain[i] );
 
-       // MARIA 2730
-       // DC Offset goes from 1 to 65535
-       //uint32_t  dcoffset = v2730_settings.ch_bslpercent[i] * 655.35;
-       //ret = CAEN_DGTZ_SetChannelDCOffset(VMEhandle, i, dcoffset);
-       //ret = CAEN_DGTZ_GetChannelDCOffset(VMEhandle, i, &dcoffset);
-       //ret = CAEN_DGTZ_SetChannelTriggerThreshold(VMEhandle, i, v1730_settings.ch_threshold[i]);
-       // In 2730, offset in percentage
-       snprintf(par_name, sizeof(par_name), "/ch/%zu/par/dcoffset", (size_t)i);
-       snprintf(value, sizeof(value), "%ul", v2730_settings.ch_bslpercent[i]);
-       ret = CAEN_FELib_SetValue(dev_handle, par_name, value);
-       if (ret != CAEN_FELib_Success) return ret;
-       // READ AGAIN
-       ret = CAEN_FELib_GetValue(dev_handle, par_name, value);
-       if (ret != CAEN_FELib_Success) return ret;
-       v2730_settings.ch_bslpercent[i] = atof(value);
 
        // MARIA 2730 TODO
        /*
@@ -660,6 +654,20 @@ INT begin_of_run(INT run_number, char *error)
        */
     }
   }
+
+  // MARIA 2730
+  // TODO check if this is the correct place to setup the endpoint
+  // CONFIGURE ENDPOINT
+  // TO SET THE DATA FORMAT
+  printf("configure end point...\t");
+  ret = configureEndPoint(&ep_handle);
+  if (ret != CAEN_FELib_Success)
+  {
+    printLastError();
+    return EXIT_FAILURE;
+  }
+
+  std::cout << " end point configured. handle: " << ep_handle << std::endl;
 
   // MARIA 2730. It was after configuring trigger. TODO check that it is ok here
   // allocate stuff
@@ -674,8 +682,9 @@ INT begin_of_run(INT run_number, char *error)
   // done MARIA 2730
 
   //////////////// CONFIGURE TRIGGER LOGIC
-  ret = configureTrigger();
+  //ret = configureTrigger(); // MARIA BY NOW
   if (ret != CAEN_FELib_Success) std::cout << " Error configuring trigger logics. Digitizer error code: " << ret << std::endl; 
+  else std::cout << "TRIGGER CONF OK" << std::endl;
 
   //ret = CAEN_DGTZ_SetSWTriggerMode(VMEhandle,CAEN_DGTZ_TRGMODE_ACQ_ONLY);         // Set the behaviour when a SW tirgger arrives 
 
@@ -697,6 +706,13 @@ INT begin_of_run(INT run_number, char *error)
    if (v2730_settings.externaltrigger)
    {
      ret = CAEN_FELib_SetValue(dev_handle, "/par/AcqTriggerSource", "ITLA|TrgIn");
+     // MARIA 041224 test
+     //ret = CAEN_FELib_SetValue(dev_handle, "/par/AcqTriggerSource", "ITLA|TrgIn|SwTrg");
+     if (ret != CAEN_FELib_Success) { printLastError(); return EXIT_FAILURE; }
+   }
+   else
+   {
+     ret = CAEN_FELib_SetValue(dev_handle, "/par/AcqTriggerSource", "ITLA");
      if (ret != CAEN_FELib_Success) { printLastError(); return EXIT_FAILURE; }
    }
    // done MARIA 2730
@@ -751,6 +767,7 @@ INT begin_of_run(INT run_number, char *error)
     exit(1);
   }
   */
+
   
 
   std::cout <<  " Board configuration done " << std::endl;
@@ -789,7 +806,7 @@ INT begin_of_run(INT run_number, char *error)
   std::cout << " Circular buffer created with size " << rb_event_buffer_size << " and max ev size: " << rb_max_event_size << " and handle " << rb_handle << std::endl;
   if(status != DB_SUCCESS)
   {
-      cm_msg(MERROR, "fe1730", "Failed to create circular buffer"); 
+      cm_msg(MERROR, "fe2730Th", "Failed to create circular buffer"); 
       exit(1);
   }
 
@@ -804,12 +821,15 @@ INT begin_of_run(INT run_number, char *error)
   //CAEN_DGTZ_SWStartAcquisition(VMEhandle);
 
   // START DAQ
+ /*
+  // MARIA 041224 pruebo a no hacer este clear data
   ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/cleardata");
   if (ret != CAEN_FELib_Success) 
   {
     printLastError();
     return EXIT_FAILURE;
   }
+*/
   ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/armacquisition");
   if (ret != CAEN_FELib_Success) 
   {     
@@ -830,7 +850,7 @@ INT begin_of_run(INT run_number, char *error)
   status = pthread_create(&tid, NULL, &readThread, (void*)&thread_link);
   if(status)
   {
-      cm_msg(MERROR,"fe1730", "Couldn't create thread for read. Return code: %d", status);
+      cm_msg(MERROR,"fe2730Th", "Couldn't create thread for read. Return code: %d", status);
       exit(1);
   }
 
@@ -899,6 +919,7 @@ void * readThread(void * arg)
   cpu_set_t mask;
   CPU_ZERO(&mask);
   CPU_SET((link + 1), &mask);
+
 
   if( sched_setaffinity(getpid(), sizeof(mask), &mask) < 0 )
   {
@@ -1188,12 +1209,19 @@ INT readEvent(void * wp)
 
   // VERVOSE
   //if (verbose) std::cout << " reading event ... " << std::endl;
+  // DEB
+  //std::cout << " reading event .ep handle: " << ep_handle << std::endl;
+
+  // TEST
+  //ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/sendswtrigger");
+  //  if (ret != CAEN_FELib_Success) printLastError();
+
   
   // MARIA 2730
   // the array waveform must have dimensions MAX_CHANNELS.
   // the unactive channels are at 0. If channels 0 and 4 are active,
   // waveform will contain: data_0 0 0 0 data_4 ....
-  ret = CAEN_FELib_ReadData(*ep_handle,
+  ret = CAEN_FELib_ReadData(ep_handle,
             TIMEOUT_MS,
             &ptEvent->timestamp,
             &ptEvent->trigger_id,
@@ -1265,7 +1293,8 @@ INT readEvent(void * wp)
   
     return 1;
   } // end CAEN_FELib_Success
-  else return 0; // unknown error. Should never be here
+  std::cout << " not recognized ret value: " << ret << std::endl; 
+  return 0; // unknown error. Should never be here
   
 }
 
@@ -1707,8 +1736,8 @@ int getBoardInfo()
  *******************
  * getBoardInfo
  ********************/
-int configureEndPoint()
-{ 
+int configureEndPoint(uint64_t * ep_handle)
+{
   int ret;
   // conigure endpoint
   ret = CAEN_FELib_GetHandle(dev_handle, "/endpoint/scope", ep_handle);
@@ -1719,11 +1748,11 @@ int configureEndPoint()
   
   ret = CAEN_FELib_SetValue(ep_folder_handle, "/par/activeendpoint", "scope");
   if (ret != CAEN_FELib_Success) return ret;
-  
+
   ret = CAEN_FELib_SetReadDataFormat(*ep_handle, DATA_FORMAT);
   if (ret != CAEN_FELib_Success) return ret;
   return ret;
-} 
+}
 
 /*******************
  *******************
@@ -1774,7 +1803,8 @@ int allocateEvent()
       exit(1);
     }
   }
-std::cout << " allocated memory for " << ptEvent->nChannels << " channels " << std::endl;
+//std::cout << " allocated memory for " << ptEvent->nChannels << " channels of nsamples: " << ptEvent->nAllocatedSamples << std::endl;
+std::cout << " allocated memory for " << ptEvent->nChannels << " channels of nsamples: " << runInfo.nSamples << std::endl;
   return SUCCESS;
 }
 
@@ -1866,7 +1896,7 @@ int setRelativeThreshold()
     if (ret != CAEN_FELib_Success) printLastError();
   
     // read event
-    ret = CAEN_FELib_ReadData(*ep_handle, 
+    ret = CAEN_FELib_ReadData(ep_handle, 
             TIMEOUT_MS, 
             &ptEvent->timestamp, 
             &ptEvent->trigger_id, 

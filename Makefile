@@ -122,7 +122,7 @@ $(PROGS): $(LIBNAME)
 #
 # utilities
 #
-$(PROGS_DIR)/fe2730Th: $(PROGS_DIR)/fe2730Th.cxx $(LIB_DIR)/mfe.o
+$(PROGS_DIR)/fe2730Th: $(PROGS_DIR)/fe2730Th.cxx $(LIB_DIR)/mfe.o 
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) $(LIB_CAEN) $(ROOTLIBS)
 
 clean::

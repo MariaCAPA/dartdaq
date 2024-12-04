@@ -5,7 +5,7 @@ TDartAnaManager::TDartAnaManager()
 {
  //AddHistogram(new TEvaluationHistograms());
 
-  fVXhisto = new TV1730Waveform();
+  fVXhisto = new TV2730Waveform();
 
   AddHistogram(fVXhisto);
   AddHistogram(new THistoCharges);
@@ -76,20 +76,20 @@ void TDartAnaManager::BeginRun(int transition,int run,int time, MVOdb* odb) {
   // "VX2740 Defaults" directory exists.
 
 /*
-  using_groups = dir_exists(odb, "V1730 Defaults");
+  using_groups = dir_exists(odb, "V2730 Defaults");
 
   for (int i = 0; i < 100; i++) {
     char test_name[32];
 
     if (using_groups) {
-      snprintf(test_name, 32, "V1730_Config_Group_%03d", i);
+      snprintf(test_name, 32, "V2730_Config_Group_%03d", i);
 
       if (dir_exists(equip, test_name)) {
         group_idxs.push_back(i);
       } else {
       }
     } else {
-      snprintf(test_name, 32, "V1730_Config_%03d", i);
+      snprintf(test_name, 32, "V2730_Config_%03d", i);
 
       if (dir_exists(equip, test_name)) {
         single_idxs.push_back(i);
@@ -102,7 +102,7 @@ void TDartAnaManager::BeginRun(int transition,int run,int time, MVOdb* odb) {
   if (using_groups) {
     for (auto idx : group_idxs) {
       char equip_name[255];
-      snprintf(equip_name, 255, "V1730_Config_Group_%03d", idx);
+      snprintf(equip_name, 255, "V2730_Config_Group_%03d", idx);
       equip->Chdir(equip_name)->Chdir("Settings")->RI("Num boards (restart on change)", &(num_boards_per_fe[idx]));
     }
   } else {

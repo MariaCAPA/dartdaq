@@ -4,7 +4,7 @@
 // Use this list here to decide which type of equipment to use.
 
 #include "THistogramArrayBase.h"
-#include "TV1730Waveform.hxx"
+#include "TV2730Waveform.hxx"
 #include "mvodb.h"
 
 // manager class; holds different set of his
@@ -44,7 +44,7 @@ private:
   std::vector<THistogramArrayBase*> fHistos;
 
   // Special histo that needs to be told how many boards there are at BOR
-  TV1730Waveform* fVXhisto;
+  TV2730Waveform* fVXhisto;
 
 };
 

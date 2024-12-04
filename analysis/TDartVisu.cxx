@@ -1,5 +1,5 @@
 #include "TDartVisu.hxx"
-#include "TV1730Waveform.hxx"
+#include "TV2730Waveform.hxx"
 #include <iostream>
 #include "midasio.h"
 
@@ -18,7 +18,7 @@
 
 TDartVisu::TDartVisu()
 {
-  fWf = new TV1730Waveform();
+  fWf = new TV2730Waveform();
   // Maria 150222
   fMainCanvas = new TCanvas("mainDartVisu","Waveform viewer");
 
@@ -43,9 +43,9 @@ void TDartVisu::UpdateHistograms(TDataContainer& dataContainer)
   fWf->UpdateHistograms(dataContainer);
 }
 
-void TDartVisu::UpdateHistograms(TV1730RawData * V1730)
+void TDartVisu::UpdateHistograms(TV2730RawData * V2730)
 {
-  fWf->UpdateHistograms(V1730);
+  fWf->UpdateHistograms(V2730);
 }
 
 void TDartVisu::PlotCanvas()
@@ -160,7 +160,7 @@ void TDartVisu::PlotCanvas()
   }
 }
 
-void TDartVisu::PlotCanvas(TV1730Waveform * wf)
+void TDartVisu::PlotCanvas(TV2730Waveform * wf)
 {
   int nch=wf->GetNChannels();
   if(GetDisplayWindow()->GetCurrentTabName().compare("WF") == 0)

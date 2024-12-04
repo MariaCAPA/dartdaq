@@ -1,5 +1,5 @@
 #include "TEventProcessor.hxx"
-#include "TV1730RawData.hxx"
+#include "TV2730RawData.hxx"
 #include "math.h"
 #include <algorithm>
 #include <iostream>
@@ -53,28 +53,28 @@ int TEventProcessor::ProcessMidasEvent(TDataContainer& dataContainer)
 
   char name[100];
   sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
-  TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
+  TV2730RawData *V2730 = dataContainer.GetEventData<TV2730RawData>(name);
   // if there are no channels, return 
-  if (!V1730 || V1730->GetNChannels()==0) 
+  if (!V2730 || V2730->GetNChannels()==0) 
   {
     printf("Didn't see bank %s or there are no channels \n", name);
     return 0;
   }
-  int retval = ProcessMidasEvent(V1730);
+  int retval = ProcessMidasEvent(V2730);
   return retval;
 }
 
-int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730) 
+int TEventProcessor::ProcessMidasEvent(TV2730RawData * V2730) 
 {
   //static ULong64_t prevTime = 0;
   static double prevTime = 0;
 
-  fDartEvent->timeNs = V1730->GetHeader().timeStampNs;
+  fDartEvent->timeNs = V2730->GetHeader().timeStampNs;
 
   // VERBOSE
   //std::cout << " timeNs " << std::setprecision(10) << fDartEvent->timeNs  << std::endl;
 
-  int nCh =  V1730->GetNChannels();
+  int nCh =  V2730->GetNChannels();
 
   // loop in channels
   float bsl[32]; // MARIA 070622
@@ -84,16 +84,16 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
     // MARIA 070622
     bsl[i]=0;
     rms[i]=0;
-    int theCh = V1730->GetChannelData(i).GetChannelNumber();
+    int theCh = V2730->GetChannelData(i).GetChannelNumber();
     if (IsDart(theCh)) 
     {
-      AnalyzeDartChannel(V1730->GetChannelData(i));
+      AnalyzeDartChannel(V2730->GetChannelData(i));
       bsl[i]=fDartEvent->dartChannel[i].bsl;
       rms[i]=fDartEvent->dartChannel[i].rms;
     }
     else 
     {
-      AnalyzeVetoChannel(V1730->GetChannelData(i));
+      AnalyzeVetoChannel(V2730->GetChannelData(i));
       bsl[i]=fDartEvent->vetoChannel[i].Vbsl;
       rms[i]=fDartEvent->vetoChannel[i].Vrms;
     }
@@ -101,8 +101,8 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   // MARIA 070622 TODO !! write in DB to read it in history
   if (hDB) 
   {
-    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/bsl/bsl", bsl, 32*sizeof(float), 32, TID_FLOAT);
-    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/rms/rms", rms, 32*sizeof(float), 32, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V2730_Data00/Variables/bsl/bsl", bsl, 32*sizeof(float), 32, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V2730_Data00/Variables/rms/rms", rms, 32*sizeof(float), 32, TID_FLOAT);
   }
 
   fDartEvent->vetoMult = fDartEvent->vetoChannel.size();
@@ -124,7 +124,7 @@ bool TEventProcessor::IsDart(int ch)
   //return false;
   return true;
 }
-int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
+int TEventProcessor::AnalyzeDartChannel(TV2730RawChannel& channelData)
 {
   TDartEvent::TDartCh dch;
   GetBasicParam(channelData, dch.bsl, dch.bmax, dch.bmaxp, dch.bmin, dch.bminp, dch.bimax, dch.rms, dch.max, dch.t0, dch.tMax, dch.charge, dch.min, dch.tMin);
@@ -218,7 +218,7 @@ int TEventProcessor::AnalyzeDartChannel(TV1730RawChannel& channelData)
   return 1;
 }
 
-int TEventProcessor::AnalyzeVetoChannel(TV1730RawChannel& channelData)
+int TEventProcessor::AnalyzeVetoChannel(TV2730RawChannel& channelData)
 {
   TDartEvent::TVetoCh vch;
   vch.Vch=channelData.GetChannelNumber();
@@ -227,7 +227,7 @@ int TEventProcessor::AnalyzeVetoChannel(TV1730RawChannel& channelData)
   return 1;
 }
 
-int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double &bsl, double &bmax, double &bmaxp, double &bmin, double &bminp, double &bimax, double &rms, double &max, double & t0, double &tMax, double &area, double &min, double &tMin)
+int TEventProcessor::GetBasicParam(TV2730RawChannel& channelData, double &bsl, double &bmax, double &bmaxp, double &bmin, double &bminp, double &bimax, double &rms, double &max, double & t0, double &tMax, double &area, double &min, double &tMin)
 {
   int nSamples = channelData.GetNSamples();
   ////////////////////

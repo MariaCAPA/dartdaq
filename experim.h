@@ -150,9 +150,9 @@ typedef struct {
 "Num subevents = UINT32 : 0",\
 "Log history = INT32 : 0",\
 "Frontend host = STRING : [32] localhost",\
-"Frontend name = STRING : [32] fe1730",\
-"Frontend file name = STRING : [256] /home/daquser/dartdaq//fe1730Th.cxx",\
-"Status = STRING : [256] fe1730@localhost",\
+"Frontend name = STRING : [32] fe2730Th",\
+"Frontend file name = STRING : [256] /home/daquser/dart2daq/fe2730Th.cxx",\
+"Status = STRING : [256] fe2730Thlocalhost",\
 "Status color = STRING : [32] greenLight",\
 "Hidden = BOOL : n",\
 "Write cache size = INT32 : 0",\
@@ -172,6 +172,7 @@ typedef struct {
   float     ch_gain[32]; // from 1 to 28
   INT32     triggerWidthNs[32];
   INT32     NRequestForCoincidence;
+  BOOL      grid_display; // requested in new version
 } V2730_DATA00_SETTINGS;
 
 #define V2730_DATA00_SETTINGS_STR(_name) const char *_name[] = {\
@@ -312,7 +313,7 @@ typedef struct {
 "[29] 1",\
 "[30] 1",\
 "[31] 1",\
-"trigger width (ns) = INT32[8] :",\
+"trigger width (ns) = INT32[32] :",\
 "[0] 40",\
 "[1] 40",\
 "[2] 40",\
@@ -346,6 +347,7 @@ typedef struct {
 "[30] 40",\
 "[31] 40",\
 "N request for coincidence = INT32 : 1",\
+"Grid display = BOOL : n",\
 "",\
 NULL }
 
