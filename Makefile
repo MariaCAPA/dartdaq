@@ -62,8 +62,10 @@ LIB_DIR   = $(MIDAS)/lib
 
 #
 #CAEN LIBRARY
-LIB_CAEN = -lCAENVME -lCAENDigitizer -lCAENComm # en /usr/lib
-INC_CAEN = /usr/include # /home/daquser/CAEN/CAENVMELib-2.50/include
+#LIB_CAEN = -lCAENVME -lCAENDigitizer -lCAENComm # en /usr/lib
+#INC_CAEN = /usr/include # /home/daquser/CAEN/CAENVMELib-2.50/include
+LIB_CAEN = -lCAEN_FELib
+
 
 
 #
@@ -71,8 +73,7 @@ INC_CAEN = /usr/include # /home/daquser/CAEN/CAENVMELib-2.50/include
 #
 
 PROGS_DIR = .
-#PROGS = $(PROGS_DIR)/fe1730Th $(PROGS_DIR)/fe1730 $(PROGS_DIR)/enableTrigger $(PROGS_DIR)/disableTrigger
-PROGS = $(PROGS_DIR)/fe1730Th $(PROGS_DIR)/enableTrigger $(PROGS_DIR)/disableTrigger
+PROGS = $(PROGS_DIR)/fe2730Th #$(PROGS_DIR)/enableTrigger $(PROGS_DIR)/disableTrigger
 
 LIBNAME = $(LIB_DIR)/libmidas.a
 LIB     = $(LIBNAME)
@@ -123,11 +124,8 @@ $(PROGS): $(LIBNAME)
 #
 # utilities
 #
-$(PROGS_DIR)/fe1730Th: $(PROGS_DIR)/fe1730Th.cxx $(LIB_DIR)/mfe.o
+$(PROGS_DIR)/fe2730Th: $(PROGS_DIR)/fe2730Th.cxx $(LIB_DIR)/mfe.o
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) $(LIB_CAEN) $(ROOTLIBS)
-
-#$(PROGS_DIR)/fe1730: $(PROGS_DIR)/fe1730.cxx $(LIB_DIR)/mfe.o
-	#$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) $(LIB_CAEN) $(ROOTLIBS)
 
 $(PROGS_DIR)/enableTrigger: $(PROGS_DIR)/enableTrigger.cxx 
 	$(CXX) $(CFLAGS) $(OSFLAGS) -o $@ $^ $(LIB) $(LIBS) $(LIB_CAEN) $(ROOTLIBS)
@@ -138,5 +136,5 @@ $(PROGS_DIR)/disableTrigger: $(PROGS_DIR)/disableTrigger.cxx
 
 clean::
 	rm -f *.o *~ \#*
-	rm -f fe1730Th fe1730 enableTrigger disableTrigger
+	rm -f fe2730Th enableTrigger disableTrigger
 
