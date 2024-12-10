@@ -1256,7 +1256,8 @@ INT readEvent(void * wp)
     for(int iev = 0; iev < (int)NumEvents; iev++) 
     {
       uint16_t flags = 0;
-      copied+=8*sizeof(WORD); // header
+      //copied+=8*sizeof(WORD); // header
+      copied+=12*sizeof(WORD); // IN ANOD header 12 words: channel_mask(2), NSamples(2), timeStamp(4), EventCounter(4)
   
       // MARIA 2730
       // two words for channel mask
@@ -1284,6 +1285,12 @@ INT readEvent(void * wp)
       *((uint64_t*)pidata) = clock;
       prevTimeStamp = ptEvent->timestamp;
       pidata+=4;
+
+      // ANOD: TODO
+      // four words: event counter, 0 by now
+      *((uint64_t*)pidata) = 0; // EventInfo.EventCounter;
+      pidata+=4;
+
   
       for (int ch = 0; ch < (int32_t)runInfo.nChannels; ch++)
       {
