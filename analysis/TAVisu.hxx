@@ -6,20 +6,20 @@
 #include <TRootanaDisplay.hxx>
 class TChain;
 class TH1;
-class TV1730Waveform;
+class TV2730Waveform;
 class TAEvent;
 
 //TChain * readARun(int run, std::string baseName="output");
-//TV1730Waveform *GetWaveform(std::string fname, int evNo);
-class TV1730WaveformM;
+//TV2730Waveform *GetWaveform(std::string fname, int evNo);
+class TV2730WaveformM;
 class TDataContainer;
-class TV1730RawData;
+class TV2730RawData;
 
 class TAVisu: public TRootanaDisplay {
 public:
   // An analysis manager.  Define and fill histograms in
   // analysis manager.
-  TV1730Waveform* fWf;
+  TV2730Waveform* fWf;
   TAEvent * fCurrentEv;
 
   TAVisu();
@@ -27,9 +27,9 @@ public:
   virtual ~TAVisu() {};
   void ResetHistograms(){}
   void UpdateHistograms(TDataContainer& dataContainer);
-  void UpdateHistograms(TV1730RawData * V1730);
+  void UpdateHistograms(TV2730RawData * V2730);
   void PlotCanvas();
-  void PlotCanvas(TV1730Waveform * wf);
+  void PlotCanvas(TV2730Waveform * wf);
 
   // Maria 150222
   TCanvas * GetMainCanvas();

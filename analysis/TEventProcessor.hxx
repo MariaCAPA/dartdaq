@@ -4,7 +4,7 @@
 #include <vector>
 #include "TDataContainer.hxx"
 #include "TAEvent.hxx"
-#include "TV1730RawData.hxx"
+#include "TV2730RawData.hxx"
 
 class TEventProcessor
 {
@@ -19,12 +19,12 @@ public:
   int GetRun() {return fRun;}
  
   int ProcessMidasEvent(TDataContainer& dataContainer);
-  int ProcessMidasEvent(TV1730RawData * V1730);
+  int ProcessMidasEvent(TV2730RawData * V2730);
   void SetRun(int run) {fRun=run;} 
 
   static void tini_push_back(double val) {tini.push_back(val);}
 
-  int GetBasicParam(TV1730RawChannel& channelData, double & area, double & bsl, double & rms, double & max, double & min, double & t0, double & tMax, double & tMin);
+  int GetBasicParam(TV2730RawChannel& channelData, double & area, double & bsl, double & rms, double & max, double & min, double & t0, double & tMax, double & tMin);
 
 
 private:
@@ -34,7 +34,7 @@ private:
   static std::vector<double> tini; // ini time (average max pos first 100 events) for every channel
 
 
-  int AnalyzeAChannel(TV1730RawChannel& channelData);
+  int AnalyzeAChannel(TV2730RawChannel& channelData);
 
   TAEvent *fAEvent;
   int fRun;

@@ -8,7 +8,7 @@
 #include "TROOT.h"
 
 
-const int numberChannelPerModule = 16;
+const int numberChannelPerModule = 32;
 
 /////////////////////// HISTO CHARGES
 
@@ -37,7 +37,7 @@ void THistoArea::CreateHistograms()
   clear();
 
   for(int i = 0; i < numberChannelPerModule; i++)
-  { // loop over 16 channels
+  { // loop over 32 channels
       
       char name[100];
       char title[100];
@@ -93,7 +93,7 @@ void THistoHigh::CreateHistograms()
   clear();
 
   for(int i = 0; i < numberChannelPerModule; i++)
-  { // loop over 16 channels
+  { // loop over 32 channels
       
       char name[100];
       char title[100];

@@ -7,7 +7,7 @@
 #pragma link C++ class TAEvent;
 #pragma link C++ class TAEvent::TACh;
 #pragma link C++ class std::vector<TAEvent::TACh>;
-#pragma link C++ class TV1730Waveform+;
+#pragma link C++ class TV2730Waveform+;
 #pragma link C++ class TAAnaManager+;
 #pragma link C++ class TAVisu+;
 #pragma link C++ class TAReadRun+;

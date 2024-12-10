@@ -1,31 +1,32 @@
-#ifndef TV1730RawData_hxx_seen
-#define TV1730RawData_hxx_seen
+#ifndef TV2730RawData_hxx_seen
+#define TV2730RawData_hxx_seen
 
 #include <vector>
 #include <map>
 
 #include "TGenericData.hxx"
 
-struct TV1730EventHeader 
+struct TV2730EventHeader 
 {
-   uint16_t channel_mask;
-   uint16_t trigger_mask;
+   uint32_t channel_mask;
+   //uint16_t channel_mask;
+   //uint16_t trigger_mask;
    uint32_t samples;
    uint64_t timeStampNs;
    uint64_t eventCounter;
 
-   TV1730EventHeader(const uint16_t* buffer=NULL);
+   TV2730EventHeader(const uint16_t* buffer=NULL);
 };
 
 
-/// Class to store information from a single V1730 channel.
-class TV1730RawChannel 
+/// Class to store information from a single V2730 channel.
+class TV2730RawChannel 
 {
 
 public:
 
   /// constructor
-  TV1730RawChannel(int channel=-1, int num_samples=0) 
+  TV2730RawChannel(int channel=-1, int num_samples=0) 
   {
     fChannelNumber = channel;
     fWaveform.resize(num_samples);
@@ -73,19 +74,19 @@ private:
 
 };
 
-/// Class to store data from CAEN V1730, 500MHz FADC.
+/// Class to store data from CAEN V2730, 500MHz FADC.
 /// This class encapsulates the data from a single board (in a single MIDAS bank).
 /// This decoder is for the default version of the firmware.
-class TV1730RawData: public TGenericData 
+class TV2730RawData: public TGenericData 
 {
 
 public:
 
   /// Constructor
-  TV1730RawData(int bklen, int bktype, const char *name, void *pdata);
+  TV2730RawData(int bklen, int bktype, const char *name, void *pdata);
 
   /// Get the number of words in bank.
-  TV1730EventHeader GetHeader() const 
+  TV2730EventHeader GetHeader() const 
   {
     return fHeader;
   }
@@ -97,7 +98,7 @@ public:
   }
 
   /// Get Channel Data
-  TV1730RawChannel& GetChannelData(int i) 
+  TV2730RawChannel& GetChannelData(int i) 
   {
     return fMeasurements[i];
   }
@@ -106,12 +107,12 @@ public:
 
 private:
 
-  TV1730EventHeader fHeader;
+  TV2730EventHeader fHeader;
 
-  /// Map of V1730 measurements
-  //std::map<int, TV1730RawChannel> fMeasurements;
+  /// Map of V2730 measurements
+  //std::map<int, TV2730RawChannel> fMeasurements;
   // define as a vector. Every RawChannel knows its channel number
-  std::vector <TV1730RawChannel> fMeasurements; 
+  std::vector <TV2730RawChannel> fMeasurements; 
 
 };
 

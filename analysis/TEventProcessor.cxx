@@ -1,5 +1,5 @@
 #include "TEventProcessor.hxx"
-#include "TV1730RawData.hxx"
+#include "TV2730RawData.hxx"
 #include "math.h"
 #include <algorithm>
 #include <iostream>
@@ -53,45 +53,45 @@ int TEventProcessor::ProcessMidasEvent(TDataContainer& dataContainer)
 
   char name[100];
   sprintf(name, "WF%02d", VMEBUS_BOARDNO); // Check for module-specific data
-  TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
+  TV2730RawData *V2730 = dataContainer.GetEventData<TV2730RawData>(name);
   // if there are no channels, return 
-  if (!V1730 || V1730->GetNChannels()==0) 
+  if (!V2730 || V2730->GetNChannels()==0) 
   {
     printf("Didn't see bank %s or there are no channels \n", name);
     return 0;
   }
-  int retval = ProcessMidasEvent(V1730);
+  int retval = ProcessMidasEvent(V2730);
   return retval;
 }
 
-int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730) 
+int TEventProcessor::ProcessMidasEvent(TV2730RawData * V2730) 
 {
   //static ULong64_t prevTime = 0;
   static double prevTime = 0;
 
-  fAEvent->timeNs = V1730->GetHeader().timeStampNs;
-  fAEvent->eventCounter = V1730->GetHeader().eventCounter;
-  fAEvent->trigger_mask = V1730->GetHeader().trigger_mask;
-  int nCh =  V1730->GetNChannels();
+  fAEvent->timeNs = V2730->GetHeader().timeStampNs;
+  fAEvent->eventCounter = V2730->GetHeader().eventCounter;
+  //fAEvent->trigger_mask = V2730->GetHeader().trigger_mask;
+  int nCh =  V2730->GetNChannels();
 
   // loop in channels
-  float bsl[16]; // MARIA 070622
-  float rms[16]; // MARIA 070622
+  float bsl[32]; // MARIA 070622
+  float rms[32]; // MARIA 070622
   for (int i=0; i<nCh; i++) 
   {
     // MARIA 070622
     bsl[i]=0;
     rms[i]=0;
-    int theCh = V1730->GetChannelData(i).GetChannelNumber();
-    AnalyzeAChannel(V1730->GetChannelData(i));
+    int theCh = V2730->GetChannelData(i).GetChannelNumber();
+    AnalyzeAChannel(V2730->GetChannelData(i));
     bsl[i]=fAEvent->channel[i].bsl;
     rms[i]=fAEvent->channel[i].rms;
   }
   // MARIA 070622 TODO !! write in DB to read it in history
   if (hDB) 
   {
-    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/bsl/bsl", bsl, 16*sizeof(float), 16, TID_FLOAT);
-    db_set_value(hDB, 0, "/Equipment/V1730_Data00/Variables/rms/rms", rms, 16*sizeof(float), 16, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V2730_Data00/Variables/bsl/bsl", bsl, 32*sizeof(float), 32, TID_FLOAT);
+    db_set_value(hDB, 0, "/Equipment/V2730_Data00/Variables/rms/rms", rms, 32*sizeof(float), 32, TID_FLOAT);
   }
 
   fAEvent->mult = fAEvent->channel.size();
@@ -104,7 +104,7 @@ int TEventProcessor::ProcessMidasEvent(TV1730RawData * V1730)
   return 1;
 }
 
-int TEventProcessor::AnalyzeAChannel(TV1730RawChannel& channelData)
+int TEventProcessor::AnalyzeAChannel(TV2730RawChannel& channelData)
 {
   TAEvent::TACh dch;
   //GetBasicParam(channelData, dch.bsl, dch.bmax, dch.bmaxp, dch.bmin, dch.bminp, dch.bimax, dch.rms, dch.max, dch.t0, dch.tMax, dch.charge, dch.min, dch.tMin);
@@ -115,7 +115,7 @@ int TEventProcessor::AnalyzeAChannel(TV1730RawChannel& channelData)
   return 1;
 }
 
-int TEventProcessor::GetBasicParam(TV1730RawChannel& channelData, double & area, double & bsl, double & rms, double & max, double & min, double & t0, double & tMax, double & tMin)
+int TEventProcessor::GetBasicParam(TV2730RawChannel& channelData, double & area, double & bsl, double & rms, double & max, double & min, double & t0, double & tMax, double & tMin)
 {
   int nSamples = channelData.GetNSamples();
   ////////////////////

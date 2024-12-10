@@ -49,7 +49,7 @@ class TAEvent: public TObject
       time=-1;
       timeNs=-1;
       mult=-1;
-      trigger_mask=0; 
+      channel_mask=0; 
       areaS=-1;
       original_file="";
       dt=-1; 
@@ -65,7 +65,7 @@ class TAEvent: public TObject
     double time;
     ULong64_t timeNs;
     int mult;
-    uint16_t trigger_mask;
+    uint32_t channel_mask;
     double areaS;
     std::string original_file; // original raw file name, to look for the pulse 
     unsigned long int  dt; // Time since prev event, in ns 
@@ -80,7 +80,7 @@ class TAEvent: public TObject
       std::cout << " time: " << time << std::endl;
       std::cout << " timeNs: " << timeNs << std::endl;
       std::cout << " mult: " << mult << std::endl;
-      std::cout << " trigger_mask: " << trigger_mask << std::endl;
+      std::cout << " channel_mask: " << channel_mask << std::endl;
       std::cout << " areaS: " << areaS << std::endl;
       std::cout << " original file: " << original_file << std::endl;
       std::cout << " dt: " << dt << std::endl;
@@ -89,7 +89,7 @@ class TAEvent: public TObject
 
     }
 
-  ClassDef (TAEvent,2);
+  ClassDef (TAEvent,4);
 };
 
 

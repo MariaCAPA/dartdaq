@@ -1,17 +1,18 @@
-#include "TV1730RawData.hxx"
+#include "TV2730RawData.hxx"
 
 #include <iomanip>
 #include <iostream>
 #include <arpa/inet.h>
 
-const int numChannels=16;
-TV1730EventHeader::TV1730EventHeader(const uint16_t *data) 
+const int numChannels=32;
+TV2730EventHeader::TV2730EventHeader(const uint16_t *data) 
 {
   // header =  word + word +  dword +  ddword + ddword = 12 * word
   if (data) 
   {
-     channel_mask = data[0];
-     trigger_mask = data[1];
+     channel_mask = *((uint32_t*)(&data[0]));
+     //channel_mask = data[0];
+     //trigger_mask = data[1];
      samples = *((uint32_t*)(&data[2]));
      timeStampNs = *((uint64_t*)(&data[4]));
      eventCounter = *((uint64_t*)(&data[8]));
@@ -28,10 +29,10 @@ TV1730EventHeader::TV1730EventHeader(const uint16_t *data)
   }
 }
 
-TV1730RawData::TV1730RawData(int bklen, int bktype, const char *name, void *pdata) :
+TV2730RawData::TV2730RawData(int bklen, int bktype, const char *name, void *pdata) :
     TGenericData(bklen, bktype, name, pdata) 
 {
-  fHeader = TV1730EventHeader(GetData16());
+  fHeader = TV2730EventHeader(GetData16());
   uint32_t num_samples = fHeader.samples;
 
 // DEB
@@ -43,12 +44,12 @@ TV1730RawData::TV1730RawData(int bklen, int bktype, const char *name, void *pdat
 
 
   // fMeasurement
-  for (int i = 0; i < 16; i++) 
+  for (int i = 0; i < 32; i++) 
   {
     if (fHeader.channel_mask & (1 << i)) 
     {
-      //fMeasurements[i] = TV1730RawChannel(i, num_samples); // es un objeto, no un puntero
-      fMeasurements.push_back(TV1730RawChannel(i, num_samples)); // es un objeto, no un puntero
+      //fMeasurements[i] = TV2730RawChannel(i, num_samples); // es un objeto, no un puntero
+      fMeasurements.push_back(TV2730RawChannel(i, num_samples)); // es un objeto, no un puntero
     }
   }
 
@@ -72,13 +73,13 @@ TV1730RawData::TV1730RawData(int bklen, int bktype, const char *name, void *pdat
   }
 }
 
-void TV1730RawData::Print() 
+void TV2730RawData::Print() 
 {
-  std::cout << "V1730 decoder for bank " << GetName().c_str() << std::endl;
+  std::cout << "V2730 decoder for bank " << GetName().c_str() << std::endl;
 
   std::cout << "Channel Mask: " << fHeader.channel_mask << std::endl;
 
-  std::cout << "trigger_mask: " << fHeader.trigger_mask << std::endl;
+  //std::cout << "trigger_mask: " << fHeader.trigger_mask << std::endl;
   std::cout << "Time stamp ns: " << fHeader.timeStampNs << std::endl;
   std::cout << "Event Counter: " << fHeader.eventCounter << std::endl;
 

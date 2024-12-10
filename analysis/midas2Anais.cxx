@@ -37,7 +37,7 @@ public:
   TTree *fTree;
 
   // tree vars
-    const Int_t kMaxCh = 8;
+    const Int_t kMaxCh = 32;
    Int_t run;
    Int_t mult;
    Int_t eventCounter;
@@ -160,7 +160,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
       //event.IterateBank32(&pbk32, (char**)pdata);
       event.IterateBank32(&pbk32, &pdata);
       if (pbk32 == NULL) break;
-      TV1730RawData *bank = new TV1730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
+      TV2730RawData *bank = new TV2730RawData(pbk32->fDataSize,pbk32->fType,pbk32->fName, pdata);
       //std::cout << " bank " << bk << " name " << pbk32->fName << " size " << pbk32->fDataSize << " type: " << pbk32->fType << std::endl;
       TEventProcessor::instance()->ProcessMidasEvent(bank);
 
@@ -169,7 +169,8 @@ std::cout << " is offline : " << IsOffline() << std::endl;
       run=fEv->run;
       mult=0;
       eventCounter=fEv->eventCounter;
-      uint16_t trigger_mask=fEv->trigger_mask;
+      //uint16_t trigger_mask=fEv->trigger_mask;
+      uint32_t trigger_mask=fEv->channel_mask;
 
       for (int i=0; i<kMaxCh; i++)
       {
@@ -183,7 +184,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
         min.push_back(fEv->channel[i].min);
         max.push_back(fEv->channel[i].max);
 
-        TV1730RawChannel& channelData = bank->GetChannelData(i);
+        TV2730RawChannel& channelData = bank->GetChannelData(i);
         int nSamples = channelData.GetNSamples();
         TH1S  aux (Form("pulse%d",i), "", nSamples, 0 ,nSamples) ;
         for (int j=0; j<nSamples; j++)
@@ -291,9 +292,9 @@ int Initializetmin(const char *file)
     // Set the midas event pointer in the physics event.
     dataContainer.SetMidasEventPointer(event);
 
-    TV1730RawData *V1730 = dataContainer.GetEventData<TV1730RawData>(name);
+    TV2730RawData *V2730 = dataContainer.GetEventData<TV2730RawData>(name);
     // if there are no channels, return 
-    if (!V1730 || V1730->GetNChannels()==0)
+    if (!V2730 || V2730->GetNChannels()==0)
     {
       printf("Didn't see bank %s or there are no channels \n", name);
       return -1;
@@ -302,7 +303,7 @@ int Initializetmin(const char *file)
     // for first event, initialize nchannels and vectors
     if (nCh==0)
     {
-      nCh =  V1730->GetNChannels();
+      nCh =  V2730->GetNChannels();
       // initialize to 0 auxliar array
       for (int i=0; i<nCh; i++) tini_aux.push_back(0);
       for (int i=0; i<nCh; i++) nEv.push_back(100);
@@ -311,7 +312,7 @@ int Initializetmin(const char *file)
     // loop in channels
     for (int i=0; i<nCh; i++)
     {
-      TEventProcessor::instance()->GetBasicParam(V1730->GetChannelData(i), dummy0, dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, tMax, dummy9, dummy10, dummy11);
+      TEventProcessor::instance()->GetBasicParam(V2730->GetChannelData(i), dummy0, dummy1, dummy2, dummy3, dummy4, dummy5, dummy6, dummy7, dummy8, tMax, dummy9, dummy10, dummy11);
       if (tMax>0) tini_aux[i]+=tMax;
       else nEv[i]--;
     }

@@ -7,7 +7,7 @@
 
 #include "TAAnaManager.hxx"
 
-class V1730Loop: public TRootanaDisplay {
+class V2730Loop: public TRootanaDisplay {
 
 public:
 
@@ -16,8 +16,8 @@ public:
   // analysis manager.
   TAAnaManager *anaManager;
 
-  V1730Loop() {
-    SetOutputFilename("v1730wfdisplay");
+  V2730Loop() {
+    SetOutputFilename("v2730wfdisplay");
     DisableRootOutput(true);
     anaManager = new TAAnaManager();
   }
@@ -36,10 +36,10 @@ public:
       }
     }
 
-    SetDisplayName("V1730 Display");
+    SetDisplayName("V2730 Display");
   }
 
-  virtual ~V1730Loop() {};
+  virtual ~V2730Loop() {};
 
   void BeginRun(int transition,int run,int time) 
   {
@@ -72,7 +72,7 @@ public:
 
 int main(int argc, char *argv[])
 {
-  V1730Loop::CreateSingleton<V1730Loop>();
-  return V1730Loop::Get().ExecuteLoop(argc, argv);
+  V2730Loop::CreateSingleton<V2730Loop>();
+  return V2730Loop::Get().ExecuteLoop(argc, argv);
 }
 

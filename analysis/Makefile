@@ -60,8 +60,8 @@ endif # MIDASSYS
 
 #OBJS += TEvaluationData.o 
 #OBJS += TEvaluationHistograms.o 
-OBJS += TV1730RawData.o 
-OBJS += TV1730Waveform.o 
+OBJS += TV2730RawData.o 
+OBJS += TV2730Waveform.o 
 OBJS += TAAnaManager.o 
 OBJS += TEventProcessor.o 
 #OBJS += TAEventDict.o 
@@ -88,7 +88,7 @@ midas2Anais.exe: midas2Anais.cxx TAEventDict.cxx $(OBJS)
 %Dict.o: %Dict.cxx
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) -c -I. $<
 
-%Dict.cxx: TV1730Waveform.hxx TAAnaManager.hxx  TAReadRun.hxx TAVisu.hxx
+%Dict.cxx: TV2730Waveform.hxx TAAnaManager.hxx  TAReadRun.hxx TAVisu.hxx
 	#rootcint -f $@ -c $(CXXFLAGS) -I. $*.hxx $^ $*_LinkDef.h
 	rootcling -f $@ -c -I. $(INCFLAGS) $*.hxx $^ $*_LinkDef.h
 
