@@ -21,17 +21,17 @@
 
 \********************************************************************/
 
-#ifndef EXCL_V1730_DATA00
+#ifndef EXCL_V2730_DATA00
 
 #define bsl_BANK_DEFINED
 
 typedef struct {
-  float     bsl[16];
+  float     bsl[32];
 } BSL_BANK;
 
 #define BSL_BANK_STR(_name) const char *_name[] = {\
 "[.]",\
-"bsl = FLOAT[16] :",\
+"bsl = FLOAT[32] :",\
 "[0] 2842.79",\
 "[1] 2826.539",\
 "[2] -8.428499e+31",\
@@ -48,18 +48,34 @@ typedef struct {
 "[13] 0",\
 "[14] 0",\
 "[15] 0",\
+"[16] 0",\
+"[17] 0",\
+"[18] 0",\
+"[19] 0",\
+"[20] 0",\
+"[21] 0",\
+"[22] 0",\
+"[23] 0",\
+"[24] 0",\
+"[25] 0",\
+"[26] 0",\
+"[27] 0",\
+"[28] 0",\
+"[29] 0",\
+"[30] 0",\
+"[31] 0",\
 "",\
 NULL }
 
 #define rms_BANK_DEFINED
 
 typedef struct {
-  float     rms[16];
+  float     rms[32];
 } RMS_BANK;
 
 #define RMS_BANK_STR(_name) const char *_name[] = {\
 "[.]",\
-"rms = FLOAT[16] :",\
+"rms = FLOAT[32] :",\
 "[0] 2488.043",\
 "[1] 2470.712",\
 "[2] 7.287124e-38",\
@@ -76,10 +92,26 @@ typedef struct {
 "[13] 0",\
 "[14] 0",\
 "[15] 0",\
+"[16] 0",\
+"[17] 0",\
+"[18] 0",\
+"[19] 0",\
+"[20] 0",\
+"[21] 0",\
+"[22] 0",\
+"[23] 0",\
+"[24] 0",\
+"[25] 0",\
+"[26] 0",\
+"[27] 0",\
+"[28] 0",\
+"[29] 0",\
+"[30] 0",\
+"[31] 0",\
 "",\
 NULL }
 
-#define V1730_DATA00_COMMON_DEFINED
+#define V2730_DATA00_COMMON_DEFINED
 
 typedef struct {
   UINT16    event_id;
@@ -101,9 +133,9 @@ typedef struct {
   char      status_color[32];
   BOOL      hidden;
   INT32     write_cache_size;
-} V1730_DATA00_COMMON;
+} V2730_DATA00_COMMON;
 
-#define V1730_DATA00_COMMON_STR(_name) const char *_name[] = {\
+#define V2730_DATA00_COMMON_STR(_name) const char *_name[] = {\
 "[.]",\
 "Event ID = UINT16 : 1",\
 "Trigger mask = UINT16 : 0",\
@@ -118,39 +150,38 @@ typedef struct {
 "Num subevents = UINT32 : 0",\
 "Log history = INT32 : 0",\
 "Frontend host = STRING : [32] localhost",\
-"Frontend name = STRING : [32] fe1730",\
-"Frontend file name = STRING : [256] /home/daquser/dartdaq//fe1730Th.cxx",\
-"Status = STRING : [256] fe1730@localhost",\
+"Frontend name = STRING : [32] fe2730Th",\
+"Frontend file name = STRING : [256] /home/daquser/dart2daq/fe2730Th.cxx",\
+"Status = STRING : [256] fe2730Thlocalhost",\
 "Status color = STRING : [32] greenLight",\
 "Hidden = BOOL : n",\
 "Write cache size = INT32 : 0",\
 "",\
 NULL }
 
-#define V1730_DATA00_SETTINGS_DEFINED
+#define V2730_DATA00_SETTINGS_DEFINED
 
 typedef struct {
   char      pulsePolarity;
   BOOL      externaltrigger;
   UINT32    recordlength;
-  UINT32    posttrigger;
-  UINT32    ch_enable[16];
-  UINT32    ch_bslpercent[16];
-  UINT32    ch_threshold[16];
-  float     ch_dynamicrange[16];
-  char      ch2_logic[8][32];
-  INT32     triggerWidthNs[8];
+  UINT32    pretrigger;
+  UINT32    ch_enable[32];
+  UINT32    ch_bslpercent[32];
+  float     ch_threshold[32]; // in mV
+  float     ch_gain[32]; // from 1 to 28
+  INT32     triggerWidthNs[32];
   INT32     NRequestForCoincidence;
-  INT32     coincidenceWindowNs;
-} V1730_DATA00_SETTINGS;
+  BOOL      grid_display; // requested in new version
+} V2730_DATA00_SETTINGS;
 
-#define V1730_DATA00_SETTINGS_STR(_name) const char *_name[] = {\
+#define V2730_DATA00_SETTINGS_STR(_name) const char *_name[] = {\
 "[.]",\
 "pulse polarity (+,-) = CHAR : +",\
 "external trigger (y,n) = BOOL : n",\
 "record length (points) = UINT32 : 5000",\
-"post-trigger (%) = UINT32 : 80",\
-"enable channel = UINT32[16] :",\
+"pretrigger (points) = UINT32 : 80",\
+"enable channel = UINT32[32] :",\
 "[0] 1",\
 "[1] 1",\
 "[2] 0",\
@@ -167,7 +198,23 @@ typedef struct {
 "[13] 0",\
 "[14] 0",\
 "[15] 0",\
-"baseline position (%) = UINT32[16] :",\
+"[16] 0",\
+"[17] 0",\
+"[18] 0",\
+"[19] 0",\
+"[20] 0",\
+"[21] 0",\
+"[22] 0",\
+"[23] 0",\
+"[24] 0",\
+"[25] 0",\
+"[26] 0",\
+"[27] 0",\
+"[28] 0",\
+"[29] 0",\
+"[30] 0",\
+"[31] 0",\
+"baseline position (%) = UINT32[32] :",\
 "[0] 90",\
 "[1] 90",\
 "[2] 50",\
@@ -184,7 +231,23 @@ typedef struct {
 "[13] 50",\
 "[14] 50",\
 "[15] 50",\
-"threshold (ADC counts) = UINT32[16] :",\
+"[16] 50",\
+"[17] 50",\
+"[18] 50",\
+"[19] 50",\
+"[20] 50",\
+"[21] 50",\
+"[22] 50",\
+"[23] 50",\
+"[24] 50",\
+"[25] 50",\
+"[26] 50",\
+"[27] 50",\
+"[28] 50",\
+"[29] 50",\
+"[30] 50",\
+"[31] 50",\
+"threshold (mV) = FLOAT[32] :",\
 "[0] 200",\
 "[1] 200",\
 "[2] 0",\
@@ -201,33 +264,56 @@ typedef struct {
 "[13] 0",\
 "[14] 0",\
 "[15] 0",\
-"dynamic range (V) (0.5,2) = FLOAT[16] :",\
-"[0] 2",\
-"[1] 2",\
-"[2] 2",\
-"[3] 2",\
-"[4] 2",\
-"[5] 2",\
-"[6] 2",\
-"[7] 2",\
-"[8] 2",\
-"[9] 2",\
-"[10] 2",\
-"[11] 2",\
-"[12] 2",\
-"[13] 2",\
-"[14] 2",\
-"[15] 2",\
-"trg (AND,OR,NONE,ONLY0,ONLY1) = STRING[8] :",\
-"[32] AND",\
-"[32] NONE",\
-"[32] NONE",\
-"[32] NONE",\
-"[32] NONE",\
-"[32] NONE",\
-"[32] NONE",\
-"[32] NONE",\
-"trigger width (ns) = INT32[8] :",\
+"[16] 0",\
+"[17] 0",\
+"[18] 0",\
+"[19] 0",\
+"[20] 0",\
+"[21] 0",\
+"[22] 0",\
+"[23] 0",\
+"[24] 0",\
+"[25] 0",\
+"[26] 0",\
+"[27] 0",\
+"[28] 0",\
+"[29] 0",\
+"[30] 0",\
+"[31] 0",\
+"gain (1,28) = FLOAT[32] :",\
+"[0] 1",\
+"[1] 1",\
+"[2] 1",\
+"[3] 1",\
+"[4] 1",\
+"[5] 1",\
+"[6] 1",\
+"[7] 1",\
+"[8] 1",\
+"[9] 1",\
+"[10] 1",\
+"[11] 1",\
+"[12] 1",\
+"[13] 1",\
+"[14] 1",\
+"[15] 1",\
+"[16] 1",\
+"[17] 1",\
+"[18] 1",\
+"[19] 1",\
+"[20] 1",\
+"[21] 1",\
+"[22] 1",\
+"[23] 1",\
+"[24] 1",\
+"[25] 1",\
+"[26] 1",\
+"[27] 1",\
+"[28] 1",\
+"[29] 1",\
+"[30] 1",\
+"[31] 1",\
+"trigger width (ns) = INT32[32] :",\
 "[0] 40",\
 "[1] 40",\
 "[2] 40",\
@@ -236,8 +322,32 @@ typedef struct {
 "[5] 40",\
 "[6] 40",\
 "[7] 40",\
+"[8] 40",\
+"[9] 40",\
+"[10] 40",\
+"[11] 40",\
+"[12] 40",\
+"[13] 40",\
+"[14] 40",\
+"[15] 40",\
+"[16] 40",\
+"[17] 40",\
+"[18] 40",\
+"[19] 40",\
+"[20] 40",\
+"[21] 40",\
+"[22] 40",\
+"[23] 40",\
+"[24] 40",\
+"[25] 40",\
+"[26] 40",\
+"[27] 40",\
+"[28] 40",\
+"[29] 40",\
+"[30] 40",\
+"[31] 40",\
 "N request for coincidence = INT32 : 1",\
-"coincidence window (ns) = INT32 : 120",\
+"Grid display = BOOL : n",\
 "",\
 NULL }
 
