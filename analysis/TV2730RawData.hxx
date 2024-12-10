@@ -8,8 +8,10 @@
 
 struct TV2730EventHeader 
 {
-   uint16_t channel_mask;
-   uint16_t flags;
+   // MARIA 2730
+   //uint16_t channel_mask;
+   uint32_t channel_mask;
+   //uint16_t flags;
    uint32_t samples;
    uint64_t timeStampNs;
 

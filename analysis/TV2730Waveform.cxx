@@ -136,7 +136,7 @@ void TV2730Waveform::UpdateHistograms(TV2730RawData * V2730)
   {
     DeleteHistograms();
     fNSamples = channelData.GetNSamples();
-    std::cout << "V2730Waveforms: updating n channels " << V2730->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
+    std::cout << "V2730Waveforms: Update Histograms updating n channels " << V2730->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
     fChannels.clear(); 
     fNChannels = V2730->GetNChannels();
     for (int i=0; i<fNChannels; i++) fChannels.push_back(V2730->GetChannelData(i).GetChannelNumber());
@@ -231,7 +231,7 @@ void TV2730Waveform::AddWaveform(TV2730Waveform* wf)
   {
     DeleteHistograms();
     fNSamples = wf->GetNSamples();
-    std::cout << "V2730Waveforms: updating n channels " << wf->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
+    std::cout << "V2730Waveforms AddWaveform: updating n channels " << wf->GetNChannels() <<  " and waveform size " << fNSamples << " bins." << std::endl;
     fChannels.clear(); 
     fNChannels = wf->GetNChannels();
     for (int i=0; i<fNChannels; i++) fChannels.push_back(wf->GetChannelNumber(i));

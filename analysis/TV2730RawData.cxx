@@ -11,8 +11,11 @@ TV2730EventHeader::TV2730EventHeader(const uint16_t *data)
   // header =  word + word +  dword +  ddword = 8 * word
   if (data) 
   {
-     channel_mask = data[0];
-     flags = data[1];
+     // MARIA 2730
+     //channel_mask = data[0];
+     //flags = data[1];
+     channel_mask = *((uint32_t*)(&data[0]));
+
      samples = *((uint32_t*)(&data[2]));
      timeStampNs = *((uint64_t*)(&data[4]));
 // DEB
@@ -35,6 +38,8 @@ TV2730RawData::TV2730RawData(int bklen, int bktype, const char *name, void *pdat
   uint32_t num_samples = fHeader.samples;
 
   // fMeasurement
+  // MARIA DEB
+  //std::cout << " TV230RawDATA constructor: nchannels: " << numChannels << std::endl;
   for (int i = 0; i < numChannels; i++) 
   {
     if (fHeader.channel_mask & (1 << i)) 

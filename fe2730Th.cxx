@@ -47,10 +47,15 @@ typedef int INT32;
 //#define V1730_MAX_EVENT_SIZE 16000000
 
 // 20 us * 500 S/us * 2 B/S * 16 ch = 320KB 
-#define V2730_MAX_EVENT_SIZE 320000
+// 20 us * 500 S/us * 2 B/S * 32 ch = 640KB  + security bytes
+#define max_record_length 10000
+#define V2730_MAX_EVENT_SIZE 641000
 
-#define MAXEV_SINGLEREADOUT 1024
-#define MAXEVMIDASINBUFFER 100
+//#define MAXEV_SINGLEREADOUT 1024
+
+// MARIA 2730
+//#define MAXEVMIDASINBUFFER 100
+#define MAXEVMIDASINBUFFER 1000
 
 // MARIA 2730
 //#define MAX_CH 16
@@ -62,8 +67,8 @@ DWORD VMEBUS_BOARDNO = 0;
 // VME base address 
 //DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
 //DWORD LINK = 1;
-std::string devicePath = "dig2://caendgtz-usb-51553";
-//std::string devicePath = "dig2://caendgtz-usb-52037";
+//std::string devicePath = "dig2://caendgtz-usb-51553";
+std::string devicePath = "dig2://caendgtz-usb-52037";
 
 WORD V2730EVENTID = 1;
 WORD V2730TRIGGERMASK = 0;
@@ -143,6 +148,7 @@ BOOL frontend_call_loop = TRUE; //FALSE;
 // a frontend status page is displayed with this frequency in ms 
 INT display_period = 000;
 
+// MARIA 2730 BUFFER DIMENSIONS USED BY MIDAS
 // dimensions of MIDAS buffer
 // maximum event size produced by this frontend 
 INT max_event_size = V2730_MAX_EVENT_SIZE;
@@ -172,7 +178,9 @@ DWORD evlimit;
 extern HNDLE hDB;  // FROM mfe.h
 HNDLE hSet;
 V2730_DATA00_SETTINGS v2730_settings;
-uint16_t channel_mask; // Mask of enabled channels
+// MARIA 2730
+//uint16_t channel_mask; // Mask of enabled channels
+uint32_t channel_mask; // Mask of enabled channels
 int enabledChannels;
 int rb_handle; // handle of the circular buffer
 std::atomic<int> num_events_in_rb_;  //!< Number of events stored in ring buffer
@@ -541,6 +549,7 @@ INT begin_of_run(INT run_number, char *error)
   if (ret != CAEN_DGTZ_Success) 
     std::cout << " Error Cannot set record length to " << v1730_settings.recordlength << " Digitizer error code: " << ret << std::endl;
   */
+  if(v2730_settings.recordlength>max_record_length)v2730_settings.recordlength=max_record_length;
   snprintf(value, sizeof(value), "%u", v2730_settings.recordlength);
   ret = CAEN_FELib_SetValue(dev_handle, "/par/RecordLengthS", value);
   if (ret != CAEN_FELib_Success)
@@ -682,7 +691,7 @@ INT begin_of_run(INT run_number, char *error)
   // done MARIA 2730
 
   //////////////// CONFIGURE TRIGGER LOGIC
-  //ret = configureTrigger(); // MARIA BY NOW
+  ret = configureTrigger(); // MARIA BY NOW
   if (ret != CAEN_FELib_Success) std::cout << " Error configuring trigger logics. Digitizer error code: " << ret << std::endl; 
   else std::cout << "TRIGGER CONF OK" << std::endl;
 
@@ -1249,11 +1258,17 @@ INT readEvent(void * wp)
       uint16_t flags = 0;
       copied+=8*sizeof(WORD); // header
   
+      // MARIA 2730
+      // two words for channel mask
+
       // 1st word: channel mask
-      *pidata++=channel_mask; 
-  
+      //*pidata++=channel_mask; 
+     
       // second word: flags ; 0 OK, 1-> error reading
-      *pidata++=flags; 
+      //*pidata++=flags; 
+      *((uint32_t*)pidata) = channel_mask;
+      pidata+=2;
+      // MARIA done 2730
   
       // two words: samples per channel
       *((uint32_t*)pidata) = v2730_settings.recordlength;
@@ -1538,7 +1553,8 @@ int configureTrigger()
 
       // Mode: relative to dc offset
       snprintf(par_name, sizeof(par_name), "/ch/%zu/par/triggerthrmode", (size_t)i);
-      ret = CAEN_FELib_SetValue(dev_handle, par_name, "Relative");
+      //ret = CAEN_FELib_SetValue(dev_handle, par_name, "Relative");
+      ret = CAEN_FELib_SetValue(dev_handle, par_name, "Absolute");
       if (ret != CAEN_FELib_Success) std::cout << " Error Cannot set threshold for ch " << i << " relative. Digitizer error"  << ret << std::endl;
       // falling /rising
       snprintf(par_name, sizeof(par_name), "/ch/%zu/par/selftriggeredge", (size_t)i);
@@ -1957,16 +1973,18 @@ int setRelativeThreshold()
     return EXIT_FAILURE;
   }
 
-  for (int ch = 0; ch < runInfo.nChannels; ch++) 
+  // SET THRESHOLD
+  for (int ich = 0; ich < runInfo.nActiveChannels; ich++)
   {
+    int ch=runInfo.activeChannels[ich];
     baseline[ch]/=nEvents; 
     rms[ch]/=nEvents;
-    int threshold = (DWORD) baseline[ch] + v2730_settings.ch_threshold[ch]*1000./runInfo.ADC2Volt[ch]*polarity;
-    snprintf(value, sizeof(value), "%d", threshold);
+    float threshold = (float) baseline[ch] + v2730_settings.ch_threshold[ch]/1000./runInfo.ADC2Volt[ch]*polarity;
+    snprintf(value, sizeof(value), "%d", (int)threshold);
     snprintf(par_name, sizeof(par_name), "/ch/%zu/par/triggerthr", (size_t)ch);
     ret = CAEN_FELib_SetValue(dev_handle, par_name, value);
     if (ret != CAEN_FELib_Success) std::cout << " Error Cannot set threshold for ch " << ch << " to " << value << " . Digitizer error " << ret << std::endl;
-    std::cout << " channel " << ch << " baseline: " << baseline[ch] << " rms: " << rms[ch] << " threshold in mv " << v2730_settings.ch_threshold[ch] << " threshold in ADC counts : " << threshold << std::endl;
+    std::cout << " channel " << ch << " baseline: " << baseline[ch] << " rms: " << rms[ch] << " threshold in mv " << v2730_settings.ch_threshold[ch] << " threshold in ADC counts : " << (int)threshold << " ADC2Volt: " << runInfo.ADC2Volt[ch] << std::endl;
   }
 
   return ret;

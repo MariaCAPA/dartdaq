@@ -247,7 +247,7 @@ typedef struct {
 "[29] 50",\
 "[30] 50",\
 "[31] 50",\
-"threshold (ADC counts) = FLOAT[32] :",\
+"threshold (mV) = FLOAT[32] :",\
 "[0] 200",\
 "[1] 200",\
 "[2] 0",\
