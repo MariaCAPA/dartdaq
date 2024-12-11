@@ -13,8 +13,10 @@ int NDetAnod = 4; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
 //std::string AnodBaseName = "./Anod112DM";
-//std::string AnodBaseName = "/media/storage/data/Anod112DMtest/Anod112DM";//"/media/storage/data/Anod112DM_analyzed/Anod112DM";
-std::string AnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
+//std::string AnodBaseName = "/media/storage/data/Anod112DMtest/Anod112DM";
+//std::string AnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
+std::string AnodBaseName = "/media/storage4/Anod112DM/Anod112DM";
+std::string SyncAnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
 std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
 std::string AnaisBaseNameCal = "/media/storage/data/A112DM/A112DMcal";
 TCanvas * cPulsesN=0;
@@ -75,6 +77,7 @@ void drawPulsesAnaSyn(int i)
 TTree * readAnais(int run, std::string anaisbasename="")
 {
   anaisbasename = (run%2 ? AnaisBaseName : AnaisBaseNameCal);
+  if(run>=9000) anaisbasename=AnaisBaseName;
   tA = new TChain("T");
   int maxPartial = 9999;
   for (int parcial=0; parcial<maxPartial; parcial++)
@@ -176,7 +179,7 @@ void sync()
   while (iN<nN) {iN++; tdAux->Fill(-1,-1);}
 
   // write to disk
-  std::string filenameN = AnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
+  std::string filenameN = SyncAnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
   TFile * fN = new TFile(filenameN.c_str(), "recreate");
   tdAux->Write();
   fN->Close();
@@ -186,7 +189,7 @@ void sync()
   tAAux->Write();
   fA->Close();
 
-  std::string outfile = AnodBaseName + Form("_%06d_sync.root", runAnod);
+  std::string outfile = SyncAnodBaseName + Form("_%06d_sync.root", runAnod);
   TFile * finfo = new TFile(outfile.c_str(), "recreate");
   tinfo->Write();
   finfo->Close();
@@ -209,7 +212,7 @@ void readSync(int rAna, int rNew, std::string anaisbasename="", std::string anod
   std::cout << " ANAIS tree : tA, New DAQ tree: td " << std::endl;
 
   // syncronize. If files does not exists, create them
-  std::string filenameN = AnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
+  std::string filenameN = SyncAnodBaseName + Form("_%06d_AnaInfo.root", runAnod);
   std::string filenameA = AnaisBaseName + Form(".%04d_AnodInfo.root",runAnais);
   if (access(filenameN.c_str(), F_OK)==-1 || access(filenameA.c_str(), F_OK)==-1) 
   {  
@@ -234,33 +237,51 @@ void readSync(int rAna, int rNew, std::string anaisbasename="", std::string anod
 void checkSync()
 {
 
-TH1F * hN = new TH1F ("hN","",200,0,20e6);
-TH1F * hA = new TH1F ("hA","",200,0,20e6);
-int nA=tA->GetEntries();
-tA->Draw("RT0*50.","","goff");
-for (int i=1; i<nA; i++) hA->Fill(tA->GetV1()[i]-tA->GetV1()[i-1]);
-int nsel = td->Draw("timeNs","AEvent>-1","goff");
-for (int i=1; i<nsel; i++) hN->Fill(td->GetV1()[i]-td->GetV1()[i-1]);
-hN->SetLineColor(kRed);
-
-TCanvas * c = new TCanvas();
-hA->Draw();
-hN->Draw("same");
-
-c = new TCanvas(); c->Divide(2);
-c->cd(1);
-tA->Draw("area00>>hA0(200,0,50e3");
-c->cd(2);
-TH1F * hn0 = new TH1F ("hn0","",200,0,300e3);
-TH1F * hn0A = new TH1F ("hn0A","",200,0,300e3);
-td->Draw("area[0]>>hn0");
-td->Draw("area[0]>>hn0A","AEvent>-1");
-hn0A->SetLineColor(kRed);
-hn0->Draw();
-hn0A->Draw("same");
-c = new TCanvas(); 
-int nselA = tA->Draw("area00","AnodEvent>-1","goff");
-int nselN = td->Draw("area[0]","AEvent>-1","goff");
-TGraph * g = new TGraph(nselA, tA->GetV1(), td->GetV1());
-g->Draw("ap");
+  TH1F * hN = new TH1F ("hN","",200,0,20e6);
+  TH1F * hA = new TH1F ("hA","",200,0,20e6);
+  int nA=tA->GetEntries();
+  tA->Draw("RT0*50.","","goff");
+  for (int i=1; i<nA; i++) hA->Fill(tA->GetV1()[i]-tA->GetV1()[i-1]);
+  int nsel = td->Draw("timeNs","AEvent>-1","goff");
+  for (int i=1; i<nsel; i++) hN->Fill(td->GetV1()[i]-td->GetV1()[i-1]);
+  hN->SetLineColor(kRed);
+  hA->GetXaxis()->SetTitle("time (ns)");
+  hA->GetYaxis()->SetTitle("counts/bin");
+  
+  TCanvas * c = new TCanvas("c","",1200,800);
+  hA->Draw();
+  hN->Draw("same");
+  c->SaveAs(Form("logSync/timeSpc_rAna%04d_rAnod%04d.png",runAnais,runAnod));
+  
+  TCanvas * c2 = new TCanvas("c2","",1200,800); 
+  c2->Divide(2);
+  c2->cd(1);
+  c2->cd(1)->SetLogy();
+  TH1F * hA0 = new TH1F ("hA0","",200,0,50e3);
+  tA->Draw("area00>>hA0","","goff");
+  hA0->GetXaxis()->SetTitle("area00 (mV ns)");
+  hA0->GetYaxis()->SetTitle("counts/bin");
+  hA0->Draw();
+  c2->cd(2);
+  c2->cd(2)->SetLogy();
+  TH1F * hn0 = new TH1F ("hn0","",200,0,300e3);
+  TH1F * hn0A = new TH1F ("hn0A","",200,0,300e3);
+  td->Draw("area[0]>>hn0");
+  td->Draw("area[0]>>hn0A","AEvent>-1");
+  hn0A->SetLineColor(kRed);
+  hn0->GetXaxis()->SetTitle("area[0] (mV ns)");
+  hn0->GetYaxis()->SetTitle("counts/bin");
+  hn0->Draw();
+  hn0A->Draw("same");
+  c2->SaveAs(Form("logSync/areaSpc_rAna%04d_rAnod%04d.png",runAnais,runAnod));
+  
+  TCanvas * c3 = new TCanvas("c3","",1200,800); 
+  int nselA = tA->Draw("area00","AnodEvent>-1","goff");
+  int nselN = td->Draw("area[0]","AEvent>-1","goff");
+  TGraph * g = new TGraph(nselA, tA->GetV1(), td->GetV1());
+  g->SetTitle("");
+  g->GetXaxis()->SetTitle("area00 (mV ns)");
+  g->GetYaxis()->SetTitle("area[0] (mV ns)");
+  g->Draw("ap");
+  c3->SaveAs(Form("logSync/areaScatter_rAna%04d_rAnod%04d.png",runAnais,runAnod));  
 }
