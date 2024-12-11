@@ -26,73 +26,32 @@
 
 #include "midas.h"
 #include "msystem.h"
-#include "CAENDigitizer.h"
-#include "CAENComm.h"
-#include "v1725Raw.h"
+
+#include <CAEN_FELib.h>
 
 
-typedef unsigned char BYTE;
-typedef unsigned short int UINT16;
-typedef short int INT16;
-typedef unsigned int UINT32;
-typedef int INT32;
-//typedef long int INT64;
-
-
-// VME base address 
-DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
-DWORD VMEBUS_BOARDNO = 0;
-DWORD LINK = 0; // MARIA, ERA 1
-int VMEhandle=-1;
-
+//std::string devicePath = "dig2://caendgtz-usb-51553";
+std::string devicePath = "dig2://caendgtz-usb-52037";
 
 
 int main()
 {
-//-- Globals -------------------------------------------------------
-
-  ////////////////////////
-  // Open VME interface, init link board_number
-  //int ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V1730_BASE, &VMEhandle);
-  int ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 1, 0,0, &VMEhandle); // Anod PC 12/24, frontal USB
-
-  int status;
-  uint32_t request = 0;
-
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
-  if (ret != CAEN_DGTZ_Success) 
-  { 
-    std::cout << " Error opening Digitizer. Digitizer error code: " << ret << std::endl;
-    exit(1);
+  char msg[1024];
+  uint64_t dev_handle; // DEVICE HANDLE
+  int  ret = CAEN_FELib_Open(devicePath.c_str(), &dev_handle);
+  if (ret != CAEN_FELib_Success)
+  {
+    CAEN_FELib_GetLastError(msg);
+    std::cout << " Error opening Digitizer. Digitizer error code: " << msg << std::endl;
+    return EXIT_FAILURE;
   }
 
-  // MARIA write 1 in GPO register
-  // To start synchornized DAQ with ANAIS
-  // -> write 0 en 0x8110 and write 0xc000 in 0x811c
-  request = 0;
-  status = CAEN_DGTZ_WriteRegister(VMEhandle, 0x8110, request);
-  if (status != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure writing GPO register (0x8110) to " << request << ". Digitizer error code: " << status << std::endl; 
-    exit(1);
+  ret = CAEN_FELib_SetValue(dev_handle, "/par/gpiomode", "Fixed1");
+  if (ret != CAEN_FELib_Success) 
+  {
+    std::cout << " Error Cannot set 1 to GPIO. Trigger will not be enabled "<< std::endl;
+    CAEN_FELib_GetLastError(msg);
+    std::cout << "Digitizer error: " << msg << std::endl;
   }
-  // 0x811C
-  // write 1 in bit [14] (force trg-out to 1)
-  // write 1 in bit [15] (test logic level)
-  // -> 0xC000
-  request = 0xC000;
-
-  status = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_FP_IO_CONTROL, request); // 0x811C
-  if (status != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure writing GPO register (0x811C) to " << request << ". Digitizer error code: " << status << std::endl; 
-    exit(1);
-  }
-  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_FP_IO_CONTROL, &request);
-  if (ret != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure reading FP_IO register (0x811C). Digitizer error code: " << ret << std::endl; 
-    exit(1);
-  }
-  std::cout << " FP_IO CONTROL REGISTER (0x811C) : " << request << std::endl;
+  else  std::cout << " TRIGGER ENABLED (1 in GPIO)" << std::endl;
 }

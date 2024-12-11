@@ -73,7 +73,7 @@ LIB_CAEN = -lCAEN_FELib
 #
 
 PROGS_DIR = .
-PROGS = $(PROGS_DIR)/fe2730Th #$(PROGS_DIR)/enableTrigger $(PROGS_DIR)/disableTrigger
+PROGS = $(PROGS_DIR)/fe2730Th $(PROGS_DIR)/enableTrigger $(PROGS_DIR)/disableTrigger
 
 LIBNAME = $(LIB_DIR)/libmidas.a
 LIB     = $(LIBNAME)
