@@ -1389,7 +1389,8 @@ INT read_event_from_rb(char *pevent, INT off)
   bk_create(pevent, bankName, TID_UINT16,  (void **)&dest); // reserva memeoria en dest 
 
   // copy data 
-  int num = enabledChannels*v2730_settings.recordlength + 8; // header: mask(1)+flags(1)+lengh(2)+timestamp(4)
+  //int num = enabledChannels*v2730_settings.recordlength + 8; // header: mask(1)+flags(1)+lengh(2)+timestamp(4)
+  int num = enabledChannels*v2730_settings.recordlength + 12; // header: mask(2)+lengh(2)+timestamp(4) + eventCounter(4)
   memcpy(dest, src, num*sizeof(WORD));
   dest +=num;
 

@@ -71,7 +71,7 @@ int TEventProcessor::ProcessMidasEvent(TV2730RawData * V2730)
 
   fAEvent->timeNs = V2730->GetHeader().timeStampNs;
   fAEvent->eventCounter = V2730->GetHeader().eventCounter;
-  //fAEvent->trigger_mask = V2730->GetHeader().trigger_mask;
+  fAEvent->channel_mask = V2730->GetHeader().channel_mask;
   int nCh =  V2730->GetNChannels();
 
   // loop in channels

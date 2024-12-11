@@ -156,6 +156,7 @@ std::cout << " is offline : " << IsOffline() << std::endl;
       fEv->bankNumber= bk;
       fEv->time = event.GetTimeStamp();
 
+
       //void ** pdata;
       //event.IterateBank32(&pbk32, (char**)pdata);
       event.IterateBank32(&pbk32, &pdata);
@@ -174,24 +175,27 @@ std::cout << " is offline : " << IsOffline() << std::endl;
 
       for (int i=0; i<kMaxCh; i++)
       {
-        if (trigger_mask & (1<<i)) {triggered.push_back(fEv->channel[i].ch);mult++;}
-        area.push_back(fEv->channel[i].area);
-        bsl.push_back(fEv->channel[i].bsl);
-        rms.push_back(fEv->channel[i].rms);
-        t0.push_back(fEv->channel[i].t0);
-        tMin.push_back(fEv->channel[i].tMin);
-        tMax.push_back(fEv->channel[i].tMax);
-        min.push_back(fEv->channel[i].min);
-        max.push_back(fEv->channel[i].max);
-
-        TV2730RawChannel& channelData = bank->GetChannelData(i);
-        int nSamples = channelData.GetNSamples();
-        TH1S  aux (Form("pulse%d",i), "", nSamples, 0 ,nSamples) ;
-        for (int j=0; j<nSamples; j++)
+        if (trigger_mask & (1<<i)) 
         {
-          aux.SetBinContent(j+1,channelData.GetADCSample(j));
+          triggered.push_back(fEv->channel[i].ch);mult++;
+          area.push_back(fEv->channel[i].area);
+          bsl.push_back(fEv->channel[i].bsl);
+          rms.push_back(fEv->channel[i].rms);
+          t0.push_back(fEv->channel[i].t0);
+          tMin.push_back(fEv->channel[i].tMin);
+          tMax.push_back(fEv->channel[i].tMax);
+          min.push_back(fEv->channel[i].min);
+          max.push_back(fEv->channel[i].max);
+  
+          TV2730RawChannel& channelData = bank->GetChannelData(i);
+          int nSamples = channelData.GetNSamples();
+          TH1S  aux (Form("pulse%d",i), "", nSamples, 0 ,nSamples) ;
+          for (int j=0; j<nSamples; j++)
+          {
+            aux.SetBinContent(j+1,channelData.GetADCSample(j));
+          }
+          pulse.push_back(aux);
         }
-        pulse.push_back(aux);
       }
 
       time=(double)fEv->time;
