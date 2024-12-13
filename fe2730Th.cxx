@@ -1,9 +1,10 @@
 /******************************************************************
 
-  Name:         fe2730.c
+  Name:         fe2730Th.c
   Created by:   Maria Martinez
+  Date:         10/12/2024
 
-  Contents:    test code of standarized frontend dealing with
+  Contents:    frontend for CAEN dig 2730 with felib library
   common VME module 
 
   $Id$
@@ -26,9 +27,6 @@
 
 #include "midas.h"
 #include "msystem.h"
-// MARIA 2730
-//#include "CAENDigitizer.h"
-//#include "CAENComm.h"
 #include <CAEN_FELib.h>
 
 #include "mfe.h"
@@ -63,29 +61,24 @@ typedef int INT32;
 #define CLOCK2NS 8
 #define TIMEOUT_MS	(100)
 DWORD VMEBUS_BOARDNO = 0;
-// MARIA 2730
-// VME base address 
-//DWORD V1730_BASE =   0; // 0x32100000; // 0-> optical link in module
-//DWORD LINK = 1;
-//std::string devicePath = "dig2://caendgtz-usb-51553";
-std::string devicePath = "dig2://caendgtz-usb-52037";
+
+
+#define ANOD 1
+
+std::string devicePath = (ANOD ? "dig2://caendgtz-usb-52037":"dig2://caendgtz-usb-51553");
+int nWordsInHeader = (ANOD ? 12 : 8);
 
 WORD V2730EVENTID = 1;
 WORD V2730TRIGGERMASK = 0;
 
-// MARIA 2730
-//int VMEhandle=-1;
 uint64_t dev_handle; // DEVICE HANDLE
 uint64_t ep_handle; // END POINT HANDLE 
-// done MARIA 2730
 
 
 
 int verbose = 1;
 
 //-- Globals -------------------------------------------------------
-// MARIA 2730
-//CAEN_DGTZ_BoardInfo_t BoardInfo;
 struct RunInfo 
 {
   time_t startDate;
@@ -101,18 +94,8 @@ struct RunInfo
   uint32_t nEvents;
 };  
 struct RunInfo runInfo;
-// done MARIA 2730
 
 
-// MARIA 2730
-// TODO!!! the buffer is not longer necesary, 
-// every call to ReadData will return one (and only one) event?
-//CAEN_DGTZ_EventInfo_t       EventInfo;
-//uint32_t BufferSize;
-//char *auxBuffer = NULL;
-//uint32_t auxBufferSize=0; 
-//char *EventPtr = NULL;
-//CAEN_DGTZ_UINT16_EVENT_t    *Event16 = NULL;
 #define DATA_FORMAT " \
         [ \
                 { \"name\" : \"TIMESTAMP\", \"type\" : \"U64\" }, \
@@ -133,7 +116,6 @@ struct EventData
   size_t nChannels;
 };
 struct EventData * ptEvent=0;
-// done MARIA 2730
 
 
 
@@ -178,8 +160,7 @@ DWORD evlimit;
 extern HNDLE hDB;  // FROM mfe.h
 HNDLE hSet;
 V2730_DATA00_SETTINGS v2730_settings;
-// MARIA 2730
-//uint16_t channel_mask; // Mask of enabled channels
+
 uint32_t channel_mask; // Mask of enabled channels
 int enabledChannels;
 int rb_handle; // handle of the circular buffer
@@ -221,13 +202,9 @@ void register_cnaf_callback(int debug);
 //int set_relative_Threshold();
 int configureTrigger();
 void * readThread(void * arg);
-// MARIA 2730. This function is not used
-//INT checkEvent();
 
 INT readEvent(void * );
 
-// 
-// MARIA 2730
 // New functions for board 2730
 int getBoardInfo(); //  dev_handle is global
 int configureEndPoint(uint64_t * ep_handle); // set data format, dev_handle and  ep_handle are globals
@@ -235,7 +212,6 @@ int allocateEvent();
 void freeEvent();
 int printLastError();
 int setRelativeThreshold();
-// done MARIA 2730
 
 
 
@@ -332,8 +308,6 @@ void seq_callback(INT hDB, INT hseq, void *info)
 //-- Frontend Init -------------------------------------------------
 int frontend_init()
 {
-  // MARIA 2730
-  //CAEN_DGTZ_ErrorCode ret;
   int ret;
  
 std::cout << " FRONTEND INIT!!!! " << std::endl;
@@ -363,18 +337,7 @@ std::cout << " polled " << std::endl;
   ////////////////////////// v2730_settings contains the configuration
 
   ////////////////////////
-  // Open VME interface, init link board_number
-  // MARIA 2730
-  /*
-  ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_OpticalLink, LINK, VMEBUS_BOARDNO,V2730_BASE, &VMEhandle);
-  //ret = CAEN_DGTZ_OpenDigitizer(CAEN_DGTZ_USB, 0, 0,0, &VMEhandle);
-  if (ret != CAEN_DGTZ_Success) 
-  { 
-    std::cout << " Error opening Digitizer. Digitizer error code: " << ret << std::endl;
-    frontend_exit();
-    exit(1);
-  }
-  */
+  // Open Device
   ret = CAEN_FELib_Open(devicePath.c_str(), &dev_handle);
   if (ret != CAEN_FELib_Success)
   {
@@ -386,18 +349,7 @@ std::cout << " polled " << std::endl;
 
 
 
-  // MARIA 2730
-  ///////////////////// reset
-  /* 
-  ret = CAEN_DGTZ_Reset(VMEhandle);            
-  if (ret != CAEN_DGTZ_Success) 
-  { 
-    std::cout << " Error Resetting Digitizer. Digitizer error code: " << ret << std::endl;
-    frontend_exit();
-    exit(1);
-  }
-  */
-   // reset digitizer
+  // reset digitizer
   printf("reset digitizer ...\t");
   ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/reset");
   if (ret != CAEN_FELib_Success)
@@ -405,28 +357,13 @@ std::cout << " polled " << std::endl;
     printLastError();
     return EXIT_FAILURE;
   }
-  // done MARIA 2730
 
-  // MARIA 2730
-  /*
-  ret = CAEN_DGTZ_GetInfo(VMEhandle, &BoardInfo);
-  if (ret != CAEN_DGTZ_Success) 
-  { 
-    std::cout << " Error getting board info. Digitizer error code: " << ret << std::endl;
-    frontend_exit();
-    exit(1);
-  }
-  printf("\nConnected to CAEN Digitizer Model %s, recognized as board %d\n", BoardInfo.ModelName, VMEBUS_BOARDNO);
-  printf("\tROC FPGA Release is %s\n", BoardInfo.ROC_FirmwareRel);
-  printf("\tAMC FPGA Release is %s\n", BoardInfo.AMC_FirmwareRel);
-  */
   ret=getBoardInfo(); // get n channels
   if (ret != CAEN_FELib_Success)
   {
     printLastError();
     return EXIT_FAILURE;
   }
-  // done MARIA 2730
 
   // TODO CALIBRATE PEDESTASLS
 
@@ -451,15 +388,6 @@ std::cout << " polled " << std::endl;
 
 INT frontend_exit()
 {
-  // MARIA 2730
-  /*
-  CAEN_DGTZ_ErrorCode ret;
-  ret = CAEN_DGTZ_CloseDigitizer(VMEhandle);
-  if (ret != CAEN_DGTZ_Success) 
-  { 
-    std::cout << " Error closing digitizer. Digitizer error code: " << ret << std::endl;
-  }
-  */ 
   int ret = CAEN_FELib_Close(dev_handle);
   if (ret != CAEN_FELib_Success)
   {
@@ -476,8 +404,6 @@ INT frontend_exit()
 
 INT begin_of_run(INT run_number, char *error)
 {
-  // MARIA 2730
-  //CAEN_DGTZ_ErrorCode ret;
   int ret;
 
   runInProgress = true;
@@ -487,17 +413,6 @@ INT begin_of_run(INT run_number, char *error)
   int size = sizeof(V2730_DATA00_SETTINGS);
   if ((status = db_get_record (hDB, hSet, &v2730_settings, &size, 0)) != DB_SUCCESS) return status;
 
-  // MARIA 2730
-  /*
-  // reset board
-  ret = CAEN_DGTZ_Reset(VMEhandle);            
-  if (ret != CAEN_DGTZ_Success) 
-  { 
-    std::cout << " Error Resetting Digitizer. Digitizer error code: " << ret << std::endl;
-    frontend_exit();
-    exit(1);
-  }
-  */
   // Maria: change reset to clear data
   printf("clear data in digitizer ...\t");
   ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/cleardata");
@@ -506,7 +421,6 @@ INT begin_of_run(INT run_number, char *error)
     printLastError();
     return EXIT_FAILURE;
   }
-  // done MARIA 2730
 
   ///////////////////// CONFIGURATION
 
@@ -534,21 +448,11 @@ INT begin_of_run(INT run_number, char *error)
   // update runInfo
   runInfo.nActiveChannels=enabledChannels;
 
-  // Maria 2730
-  //ret = CAEN_DGTZ_SetChannelEnableMask(VMEhandle,channel_mask);
   if (verbose) std::cout <<  " channel mask " << std::hex << (int)channel_mask << std::dec << std::endl;
 
   ///////////////// RECORD LENGTH
   DWORD testVal;
-  // MARIA 2730
-  /*
-  ret = CAEN_DGTZ_SetRecordLength(VMEhandle,v1730_settings.recordlength);     // Set the lenght of each waveform (in samples) 
-  if (ret != CAEN_DGTZ_Success) 
-    std::cout << " Error Cannot set record length to " << v1730_settings.recordlength << " Digitizer error code: " << ret << std::endl;
-  ret = CAEN_DGTZ_GetRecordLength(VMEhandle, &v1730_settings.recordlength);
-  if (ret != CAEN_DGTZ_Success) 
-    std::cout << " Error Cannot set record length to " << v1730_settings.recordlength << " Digitizer error code: " << ret << std::endl;
-  */
+
   if(v2730_settings.recordlength>max_record_length)v2730_settings.recordlength=max_record_length;
   snprintf(value, sizeof(value), "%u", v2730_settings.recordlength);
   ret = CAEN_FELib_SetValue(dev_handle, "/par/RecordLengthS", value);
@@ -563,20 +467,8 @@ INT begin_of_run(INT run_number, char *error)
   if (testVal!=v2730_settings.recordlength) std::cout << " WARNING : RECORD LENGTH SET TO : " << testVal;
   v2730_settings.recordlength = testVal;
   runInfo.nSamples = testVal;
-  // done MARIA 2730
   
-  // MARIA 2730
-  ///////////////// POSTTRIGGER. In percent of the whole acquisition window
-  /*
-  testVal = v1730_settings.posttrigger; 
-  ret = CAEN_DGTZ_SetPostTriggerSize(VMEhandle,v1730_settings.posttrigger);  // Set the posttrigger for each waveform (in samples) 
-  if (ret != CAEN_DGTZ_Success) 
-    std::cout << " Error Cannot set posttrigger to " << v1730_settings.posttrigger << " Digitizer error code: " << ret << std::endl;
-  ret = CAEN_DGTZ_GetPostTriggerSize(VMEhandle, &v1730_settings.posttrigger);
-  if (ret != CAEN_DGTZ_Success) 
-    std::cout << " Error Cannot set posttrigger to " << v1730_settings.posttrigger << " Digitizer error code: " << ret << std::endl;
-  if (testVal!=v1730_settings.posttrigger) std::cout << " WARNING : POSTRIGGER  SET TO : " << v1730_settings.posttrigger;
-  */
+  // PRETRIGGER
   snprintf(value, sizeof(value), "%u", v2730_settings.pretrigger);
   ret = CAEN_FELib_SetValue(dev_handle, "/par/PreTriggerS", value);
   if (ret != CAEN_FELib_Success)
@@ -592,30 +484,15 @@ INT begin_of_run(INT run_number, char *error)
 
 
   ////////////// NIM LEVELS
-  // MARIA 2730
-  /*
-  ret = CAEN_DGTZ_SetIOLevel(VMEhandle, CAEN_DGTZ_IOLevel_NIM);
-  if (ret != CAEN_DGTZ_Success) 
-    std::cout << " Error Cannot set levels to NIM.  Digitizer error code: " << ret << std::endl;
-  */
   ret = CAEN_FELib_SetValue(dev_handle, "/par/iolevel", "NIM");
   if (ret != CAEN_FELib_Success)
     std::cout << " Error Cannot set levels to NIM. Digitizer error code: " << ret << std::endl;
 
   //////////////// CHANNEL GAIN , OFFSET AND TRIGGER THRESHOLD
-  // MARIA 2730
-  //for(size_t i=0;i<BoardInfo.Channels;++i)
   for(size_t i=0;i<runInfo.nChannels;++i)
   {
     if (v2730_settings.ch_enable[i])
     {
-       // MARIA 2730
-       // DC Offset goes from 1 to 65535
-       //uint32_t  dcoffset = v2730_settings.ch_bslpercent[i] * 655.35;
-       //ret = CAEN_DGTZ_SetChannelDCOffset(VMEhandle, i, dcoffset);
-       //ret = CAEN_DGTZ_GetChannelDCOffset(VMEhandle, i, &dcoffset);
-       //ret = CAEN_DGTZ_SetChannelTriggerThreshold(VMEhandle, i, v1730_settings.ch_threshold[i]);
-       // In 2730, offset in percentage
        if ( v2730_settings.ch_bslpercent[i]<0)  v2730_settings.ch_bslpercent[i]=0;
        if ( v2730_settings.ch_bslpercent[i]>100)  v2730_settings.ch_bslpercent[i]=100;
      
@@ -629,11 +506,6 @@ INT begin_of_run(INT run_number, char *error)
        v2730_settings.ch_bslpercent[i] = atof(value);
        printf("dc offset ch %d set to :\t%u\n", (int)i, v2730_settings.ch_bslpercent[i] );
 
-       // MARIA 2730
-       //bool dyn = 0; // default +- 2V
-       //if (v2730_settings.ch_dynamicrange[i]<2) dyn=1;
-       //ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_DYNAMIC_RANGE  + (i<<8), dyn);
-       //std::cout << " channel " << i << " dynamic range: " << (dyn ? "+-0.5 V" : " +-2 V") << std::endl;
        double gain = v2730_settings.ch_gain[i];
        int decibel = round(20.*log10(gain));
        // limits
@@ -653,19 +525,9 @@ INT begin_of_run(INT run_number, char *error)
        if (ret != CAEN_FELib_Success) return ret;
        runInfo.ADC2Volt[i]=atof(value); 
        printf("gain ch %d set to :\t%f\n", (int)i, v2730_settings.ch_gain[i] );
-
-
-       // MARIA 2730 TODO
-       /*
-       if (!strcmp(&v2730_settings.pulsePolarity,"+")) 
-         ret = CAEN_DGTZ_SetTriggerPolarity(VMEhandle, i, CAEN_DGTZ_TriggerOnRisingEdge); 
-       else ret = CAEN_DGTZ_SetTriggerPolarity(VMEhandle, i, CAEN_DGTZ_TriggerOnFallingEdge);
-       */
     }
   }
 
-  // MARIA 2730
-  // TODO check if this is the correct place to setup the endpoint
   // CONFIGURE ENDPOINT
   // TO SET THE DATA FORMAT
   printf("configure end point...\t");
@@ -678,8 +540,7 @@ INT begin_of_run(INT run_number, char *error)
 
   std::cout << " end point configured. handle: " << ep_handle << std::endl;
 
-  // MARIA 2730. It was after configuring trigger. TODO check that it is ok here
-  // allocate stuff
+  // ALLOCATE EVENT
   // do alwais AFTER configuring the nsamples and nchannels (configure_digitizer)
   ret =  allocateEvent();
   if (ret != SUCCESS) 
@@ -688,35 +549,15 @@ INT begin_of_run(INT run_number, char *error)
     frontend_exit();
     exit(1);
   }
-  // done MARIA 2730
 
   //////////////// CONFIGURE TRIGGER LOGIC
   ret = configureTrigger(); // MARIA BY NOW
   if (ret != CAEN_FELib_Success) std::cout << " Error configuring trigger logics. Digitizer error code: " << ret << std::endl; 
   else std::cout << "TRIGGER CONF OK" << std::endl;
 
-  //ret = CAEN_DGTZ_SetSWTriggerMode(VMEhandle,CAEN_DGTZ_TRGMODE_ACQ_ONLY);         // Set the behaviour when a SW tirgger arrives 
-
- // set acquisition mode: starts by software. Other options are
- // CAEN_DGTZ_SW_CONTROLLED             = 0L,
- // CAEN_DGTZ_S_IN_CONTROLLED           = 1L,
- // CAEN_DGTZ_FIRST_TRG_CONTROLLED      = 2L,
- // CAEN_DGTZ_LVDS_CONTROLLED           = 3L,
-
- // MARIA 2730 CHECK IF IT IS NECESSARY TODO
- //ret = CAEN_DGTZ_SetAcquisitionMode(VMEhandle,CAEN_DGTZ_SW_CONTROLLED);   
- //if (ret != CAEN_DGTZ_Success) std::cout << " Error Cannot set acquisition sw controlled. Digitizer error code: " << ret << std::endl; 
-
-  // MARIA 2730
-  // TODO por ahora configurar tambien trigger externo. luego ya veremos
-  // las opciones son CAEN_DGTZ_TRGMODE_DISABLED; CAEN_DGTZ_TRGMODE_ACQ_ONLY; CAEN_DGTZ_TRGMODE_ACQ_AND_EXTOUT;
-  //ret = CAEN_DGTZ_SetExtTriggerInputMode(VMEhandle, (v2730_settings.externaltrigger ? CAEN_DGTZ_TRGMODE_ACQ_ONLY: CAEN_DGTZ_TRGMODE_DISABLED));
-  //if (ret != CAEN_DGTZ_Success) std::cout << " Error Cannot set external trigger. Digitizer error code: " << ret << std::endl; 
    if (v2730_settings.externaltrigger)
    {
      ret = CAEN_FELib_SetValue(dev_handle, "/par/AcqTriggerSource", "ITLA|TrgIn");
-     // MARIA 041224 test
-     //ret = CAEN_FELib_SetValue(dev_handle, "/par/AcqTriggerSource", "ITLA|TrgIn|SwTrg");
      if (ret != CAEN_FELib_Success) { printLastError(); return EXIT_FAILURE; }
    }
    else
@@ -724,85 +565,10 @@ INT begin_of_run(INT run_number, char *error)
      ret = CAEN_FELib_SetValue(dev_handle, "/par/AcqTriggerSource", "ITLA");
      if (ret != CAEN_FELib_Success) { printLastError(); return EXIT_FAILURE; }
    }
-   // done MARIA 2730
 
   std::cout << " active channels :  " << enabledChannels <<  " N samples: " <<  v2730_settings.recordlength << std::endl;
 
-  // MARIA 2730. This is not necessary anymore
-  /*
-  uint32_t lstatus;
-  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BUFFER_ORGANIZATION, &lstatus);
-  int NBUFFERS = pow(2,lstatus);
-  std::cout << " buffer organization . Number of buffers: " << NBUFFERS  << std::endl;
-
-  // Set the max number of events to transfer in a sigle readout
-  ret = CAEN_DGTZ_SetMaxNumEventsBLT(VMEhandle,1023);  // MARIA 130422      
-
-  // read channel trigger conf
-  uint32_t boardCfg;
-  ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_BOARD_CONFIG, &boardCfg);
-  std::cout << " board config: " << boardCfg << std::endl;
-  uint32_t valConf;
-  uint32_t width;
-  // MARIA 2730
-  //for(size_t i=0;i<BoardInfo.Channels/2;++i)
-  for(size_t i=0;i<runInfo.nChannels/2;++i)
-  {
-    ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_CHANNEL_TRIGGER_CONF  + (2*i<<8), &valConf);
-    ret = CAEN_DGTZ_ReadRegister(VMEhandle, V1725_PULSE_WIDTH  + (2*i<<8), &width);
-    std::cout << " channels pair " << i << " channel_trigger_conf: " << valConf << " widht: " << width << " (x8 to obntain ns ) "  << std::endl;
-  }
-
-  */
-
-  // MARIA 2730
-  // There is no buffer now. We can keep same memory for the whole session. 
-  // Reserve in Open digitizer and free in close digitizer
-  /*
-  ret = CAEN_DGTZ_MallocReadoutBuffer(VMEhandle, &auxBuffer, &auxBufferSize);
-  if (ret != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure allocating buffer!. Digitizer error code: " << ret << std::endl; 
-    frontend_exit();
-    exit(1);
-  }
-
-  // Allocate memory for event data and redout buffer
-  ret = CAEN_DGTZ_AllocateEvent(VMEhandle, (void**)&Event16);
-  if (ret != CAEN_DGTZ_Success) 
-  {  
-    std::cout << " Failure allocating buffer!. Digitizer error code: " << ret << std::endl; 
-    frontend_exit();
-    exit(1);
-  }
-  */
-
-  
-
   std::cout <<  " Board configuration done " << std::endl;
-
-  // SET RELATIVE THRESHOLD
-
-  // MARIA 2730 this is done inside setRelativeThreshold
-  /*
-  // ACTIVATE ALSO SOFTWARE TRIGGER FOR BSL COMPUTING
-  ret = CAEN_DGTZ_SetSWTriggerMode(VMEhandle, CAEN_DGTZ_TRGMODE_ACQ_ONLY);
-  if (ret != CAEN_DGTZ_Success) std::cout << " Error Cannot set software trigger. Digitizer error code: " << ret << std::endl; 
-  */
-
-  // MARIA 2730
-  // now it is call inside configureTrigger
-  /*
-  int retVal = set_relative_Threshold();
-  if (retVal != 0) 
-  {  
-    std::cout << " Failure in setting relative threshold"  << std::endl; 
-    frontend_exit();
-    exit(1);
-  }
-  std::cout <<  " relative threshold done " << std::endl;
-  */
-
 
   // ENABLE IRQ???
 
@@ -823,35 +589,37 @@ INT begin_of_run(INT run_number, char *error)
   counter = 0;
   prevTimeStamp = 0;
 
-
-  // MARIA 2730
-  // ARM ACQUISITON
-  //CAEN_DGTZ_ClearData(VMEhandle);
-  //CAEN_DGTZ_SWStartAcquisition(VMEhandle);
-
-  // START DAQ
- /*
-  // MARIA 041224 pruebo a no hacer este clear data
-  ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/cleardata");
-  if (ret != CAEN_FELib_Success) 
+  if (ANOD) 
   {
-    printLastError();
-    return EXIT_FAILURE;
+    /////////////////////////////////// 
+    ///////// ENABLE TRIGGER
+    /////////////////////////////////// 
+    char msg[1024];
+    ret = CAEN_FELib_SetValue(dev_handle, "/par/trgoutmode", "Run");
+    if (ret != CAEN_FELib_Success) 
+    {
+      std::cout << " Error Cannot TrgoutMode to Run. Trigger will not be enabled "<< std::endl;
+      CAEN_FELib_GetLastError(msg);
+      std::cout << "Digitizer error: " << msg << std::endl;
+    }
+    else  std::cout << " TRIGGER ENABLED WHEN DAQ STARTS (NIM signal in trgout)" << std::endl;
   }
-*/
+
+
+  // ARM ACQUISITON
   ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/armacquisition");
   if (ret != CAEN_FELib_Success) 
   {     
     printLastError();
     return EXIT_FAILURE;
   }
+  // START DAQ
   ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/swstartacquisition");
   if (ret != CAEN_FELib_Success) 
   {     
     printLastError();
     return EXIT_FAILURE;
   }     
-  // done Maria 2730
 
   usleep(300000); // MARIA 130422
 
@@ -862,6 +630,7 @@ INT begin_of_run(INT run_number, char *error)
       cm_msg(MERROR,"fe2730Th", "Couldn't create thread for read. Return code: %d", status);
       exit(1);
   }
+
 
   return SUCCESS;
 }
@@ -881,9 +650,6 @@ INT end_of_run(INT run_number, char *error)
     printf(">>> Thread %d joined, return code: %d\n", (int)tid, *status);
 
     std::cout << "stopping daq ..." << std::endl;
-    // Maria 2730
-    //CAEN_DGTZ_SWStopAcquisition(VMEhandle);
-    //CAEN_DGTZ_ClearData(VMEhandle);
     ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/disarmacquisition");
     if (ret != CAEN_FELib_Success) 
     {
@@ -897,12 +663,6 @@ INT end_of_run(INT run_number, char *error)
       return EXIT_FAILURE;
     }
 
-
-
-    // MARIA 2730
-    //CAEN_DGTZ_FreeReadoutBuffer(&auxBuffer);
-    //std::cout << "free event ... " << std::endl;
-    //if (Event16)  CAEN_DGTZ_FreeEvent(VMEhandle, (void**)&Event16);
     freeEvent();
 
     // free circular buffer
@@ -912,6 +672,23 @@ INT end_of_run(INT run_number, char *error)
 
 
     //Reset all IRQs    
+  }
+
+  if (ANOD) 
+  {
+    /////////////////////////////////// 
+    ///////// disable run mode in trgout in order to 
+    //////// not propagate sync signal during the bsl measurements
+    /////////////////////////////////// 
+    char msg[1024];
+    ret = CAEN_FELib_SetValue(dev_handle, "/par/trgoutmode", "Disabled");
+    if (ret != CAEN_FELib_Success) 
+    {
+      std::cout << " Error Cannot TrgoutMode to disabled. Trigger will not be disabled "<< std::endl;
+      CAEN_FELib_GetLastError(msg);
+      std::cout << "Digitizer error: " << msg << std::endl;
+    }
+    else  std::cout << " TRIGGER DISABLED (NIM 0 signal in trgout)" << std::endl;
   }
 
   return SUCCESS;
@@ -1084,148 +861,10 @@ INT poll_event(INT source, INT count, BOOL test)
 
 }
 
-// MARIA 2730
-// this function is not used
-/*
-INT checkEvent()
-{
-
-  ///////// CHECK EVENT IS READY
-   // MARIA DAQ ZGZ TEST APRIL22
-  DWORD vmeStat;
-  CAENComm_ErrorCode sCAEN = CAENComm_Read32(VMEhandle, V1725_VME_STATUS, &vmeStat);
-  return (vmeStat & 0x1);
-
-}
-*/
-
-// MARIA 2730
-// The function ReadData from FeLib returns only one event per call
-// Change the whole function
-/*
-INT readEvent(void * wp)
-{
-  CAEN_DGTZ_ErrorCode ret;
-
-  // VERVOSE
-  //if (verbose) std::cout << " reading event ... " << std::endl;
-  
-  CAEN_DGTZ_ReadData(VMEhandle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, auxBuffer, &BufferSize);
-
-  uint32_t NumEvents = 0;
-  if (BufferSize != 0) 
-  {
-    ret = CAEN_DGTZ_GetNumEvents(VMEhandle, auxBuffer, BufferSize, &NumEvents);
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      cm_msg(MERROR,"ReadEvent", "Communication error: %d", ret);
-      std::cout << " error getting  number of events" << std::endl;
-      return (ret == CAEN_DGTZ_Success);
-    }
-  }
-  else 
-  {
-    uint32_t lstatus;
-    ret = CAEN_DGTZ_ReadRegister(VMEhandle, CAEN_DGTZ_ACQ_STATUS_ADD, &lstatus);
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      printf("Warning: Failure reading reg:%x (%d)\n", CAEN_DGTZ_ACQ_STATUS_ADD, ret);
-      cm_msg(MERROR,"ReadEvent", "Communication error: %d", ret);
-      return (ret == CAEN_DGTZ_Success);
-    }
-    else 
-    {
-      if (lstatus & (0x1 << 19)) 
-      {
-        std::cout << " ERR_OVERTEMP!!" << std::endl;
-        cm_msg(MERROR,"ReadEvent", "ERR_OVERTEMP: %d", ret);
-        return (ret == CAEN_DGTZ_Success);
-      }
-    }
-  }
-
-  ////////////////////////// HERE!
-//VERBOSE 
-//if (BufferSize>0) std::cout << " Buffer size " << BufferSize << " reserved " << auxBufferSize << " NEV: " << NumEvents << std::endl;
-  int copied=0;
-  WORD *pidata = (WORD*)wp; // MARIA treat wp as WORD array (short int)
-  for(int iev = 0; iev < (int)NumEvents; iev++) 
-  {
-
-    uint16_t flags = 0;
-    copied+=8*sizeof(WORD); // header
-
-    ret = CAEN_DGTZ_GetEventInfo(VMEhandle, auxBuffer, BufferSize, iev, &EventInfo, &EventPtr);
-    if (ret != CAEN_DGTZ_Success) 
-    {
-      std::cout << " error getting event info. Ev number " << iev << " of total events " << NumEvents << " buffer size: " << BufferSize  << " mybuffer size " << BufferSize << std::endl;
-        cm_msg(MERROR,"ReadEvent", "error getting event info. Event number: %d, error: %d", iev, ret);
-        return (ret == CAEN_DGTZ_Success);
-    }
-    ret = CAEN_DGTZ_DecodeEvent(VMEhandle, EventPtr, (void**)&Event16);
-
-    // 1st word: channel mask
-    *pidata++=channel_mask; 
-
-    // second word: flags ; 0 OK, 1-> error reading
-    *pidata++=flags; 
-
-    // two words: samples per channel
-    *((uint32_t*)pidata) = v1730_settings.recordlength;
-    pidata+=2;
-
-    // four words: time stamp
-    // TODO aniadir check in clock. This is only valid for rate < 1 / 17 sec
-    if (EventInfo.TriggerTimeTag<prevTimeStamp) counter++;
-    uint64_t clock = (uint64_t)(counter<<31) + EventInfo.TriggerTimeTag;
-    clock *= CLOCK2NS; 
-    *((uint64_t*)pidata) = clock;
-    prevTimeStamp = EventInfo.TriggerTimeTag;
-    pidata+=4;
-
-    // MARIA 2730
-    //for (int ch = 0; ch < (int32_t)BoardInfo.Channels; ch++)
-    for (int ch = 0; ch < (int32_t)runInfo.nChannels; ch++)
-    {
-      if (v1730_settings.ch_enable[ch])
-      {
-//VERBOSE
-//std::cout << " ch " << ch << " chsize " << Event16->ChSize[ch] << " data[0]: " << Event16->DataChannel[ch][0] << std::endl;
-        memcpy(pidata,Event16->DataChannel[ch], Event16->ChSize[ch]*sizeof(WORD));
-        pidata += Event16->ChSize[ch]; 
-        copied+=Event16->ChSize[ch]*sizeof(WORD);
-      }
-    }
-  }
-
-  if (copied==0) return (ret==CAEN_DGTZ_Success);
-  /////////// increment circular buffer 
-  rb_increment_wp(rb_handle, copied);
-
-  IncrementNumEventsInRB(NumEvents); //atomic
-
-  // VERBOSE
-  //if (verbose) std::cout << " copied in cb " << copied << " bytes for " << NumEvents << " events. Events in buffer: " << GetNumEventsInRB() << std::endl;
-
-  return (ret == CAEN_DGTZ_Success);
-
-}
-*/
-
 INT readEvent(void * wp)
 {
   int ret;
 
-  // VERVOSE
-  //if (verbose) std::cout << " reading event ... " << std::endl;
-  // DEB
-  //std::cout << " reading event .ep handle: " << ep_handle << std::endl;
-
-  // TEST
-  //ret = CAEN_FELib_SendCommand(dev_handle, "/cmd/sendswtrigger");
-  //  if (ret != CAEN_FELib_Success) printLastError();
-
-  
   // MARIA 2730
   // the array waveform must have dimensions MAX_CHANNELS.
   // the unactive channels are at 0. If channels 0 and 4 are active,
@@ -1256,19 +895,11 @@ INT readEvent(void * wp)
     for(int iev = 0; iev < (int)NumEvents; iev++) 
     {
       uint16_t flags = 0;
-      copied+=8*sizeof(WORD); // header
+      copied+=nWordsInHeader*sizeof(WORD);
   
-      // MARIA 2730
       // two words for channel mask
-
-      // 1st word: channel mask
-      //*pidata++=channel_mask; 
-     
-      // second word: flags ; 0 OK, 1-> error reading
-      //*pidata++=flags; 
       *((uint32_t*)pidata) = channel_mask;
       pidata+=2;
-      // MARIA done 2730
   
       // two words: samples per channel
       *((uint32_t*)pidata) = v2730_settings.recordlength;
@@ -1284,6 +915,15 @@ INT readEvent(void * wp)
       *((uint64_t*)pidata) = clock;
       prevTimeStamp = ptEvent->timestamp;
       pidata+=4;
+
+      // ANOD: TODO
+      // four words: event counter, 0 by now
+      if (ANOD)
+      {
+        *((uint64_t*)pidata) = 0; // EventInfo.EventCounter;
+        pidata+=4;
+      }
+
   
       for (int ch = 0; ch < (int32_t)runInfo.nChannels; ch++)
       {
@@ -1382,7 +1022,7 @@ INT read_event_from_rb(char *pevent, INT off)
   bk_create(pevent, bankName, TID_UINT16,  (void **)&dest); // reserva memeoria en dest 
 
   // copy data 
-  int num = enabledChannels*v2730_settings.recordlength + 8; // header: mask(1)+flags(1)+lengh(2)+timestamp(4)
+  int num = enabledChannels*v2730_settings.recordlength + nWordsInHeader;
   memcpy(dest, src, num*sizeof(WORD));
   dest +=num;
 
@@ -1410,96 +1050,6 @@ INT read_event_from_rb(char *pevent, INT off)
  *******************
  * configure trigger
  ********************/
-// MARIA 2730 
-// do from scratch
-/*
-int configureTrigger()
-{
-  // FOR EVERY CHANNEL PAIR:
-  // Reg 0x1n84 (for every pair) V1725_CHANNEL_TRIGGER_CONF
-  // Bits[10] 00 AND
-  //          01 ONLY0
-  //          10 ONLY1
-  //          11 OR
-  // Bit[2]    0 programable width [when triggerWidthNs>0]
-  //           1 trigger on as long as pulse above/below threshold
-  // 
-  // Reg 0x1n70  V1725_PULSE_WIDTH
-  // Bits[7-0] width in clock units (8ns)
-  //
-  // GLOBAL:
-  // Reg 0x810C V1725_TRIG_SRCE_EN_MASK
-  // Bits [7-0] Request that take part of the global trigger
-  // Bit[23-20] set the coincidence window (T TVAW ) linearly in steps of the Trigger clock (8ns)
-  // Bit[26-24] set the Majority (i.e. Coincidence) level. Nreqest = 1 -> majority = 0)
-  //            majority from 0 to 7
-  // 
-  // info in v1730_settings
-  //  char      ch2_logic[8][32]; -> AND/ONLY0/ONLY1/OR/NONE
-  //  INT32     triggerWidthNs[8];
-  //  INT32     NRequestForCoincidence; = majority + 1
-  //  INT32     coincidenceWindowNs;
-  CAEN_DGTZ_ErrorCode ret;
-  uint32_t request = 0;
-  uint32_t majority = v2730_settings.NRequestForCoincidence - 1; 
-  if (majority>7) majority = 7;
-  uint32_t TVAW =  v2730_settings.coincidenceWindowNs/CLOCK2NS;
-  // to be configured with 4 bits -> [0 - 15]
-  if (TVAW>15) 
-  {
-    std::cout << " coincidence window requested " << v2730_settings.coincidenceWindowNs << " but maximum is " << 15*CLOCK2NS << " configuring " << 15*CLOCK2NS << std::endl;
-    TVAW = 15;
-  }
-
-
-  std::cout << " configuring trigger logics............ " << std::endl; 
-  // MARIA 2730
-  //for(size_t i=0;i<BoardInfo.Channels/2;++i)
-  for(size_t i=0;i<runInfo.nChannels/2;++i)
-  {
-    uint32_t valConf =0;
-    uint32_t width =0;
-    // 1. check if has to be included in request (check that it is different from NONE)
-    if(strcmp(v2730_settings.ch2_logic[i],"NONE"))
-    {
-      // different from NONE! . If it is one of the allowed cases, activate bit in request
-      // Bits[10] 00 AND
-      //          01 ONLY0
-      //          10 ONLY1
-      //          11 OR
-      if(!strcmp(v2730_settings.ch2_logic[i],"AND")) { valConf = 0; request |= (1<<i); }
-      if(!strcmp(v2730_settings.ch2_logic[i],"ONLY0")) { valConf = 1; request |= (1<<i); }
-      if(!strcmp(v2730_settings.ch2_logic[i],"ONLY1")) { valConf = 2; request |= (1<<i); }
-      if(!strcmp(v2730_settings.ch2_logic[i],"OR")) { valConf = 3; request |= (1<<i); }
-      // check programmable window
-      //if (v1730_settings.triggerWidthNs[i]==0) valConf |=4; // rise bit 2
-      //else width =  v1730_settings.triggerWidthNs[i]/CLOCK2NS;
-      // MARIA 160222 TEST!!
-      valConf |=4; // rise bit 2
-      width =  v2730_settings.triggerWidthNs[i]/CLOCK2NS;
-      if (width>255) width = 255; // codified in 1 Byte
-    }
-    ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_CHANNEL_TRIGGER_CONF  + (2*i<<8), valConf);
-    if (ret!=CAEN_DGTZ_Success) return ret;
-    ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_PULSE_WIDTH  + (2*i<<8), width);
-    if (ret!=CAEN_DGTZ_Success) return ret;
- 
-    std::cout << " couple of channels " << 2*i << " " << 2*i+1 << " : conf mask " << valConf << " width " << width << std::endl;
-
-  }
-  // Reg 0x810C V1725_TRIG_SRCE_EN_MASK
-  // Bits [7-0] Request that take part of the global trigger
-  // Bit[23-20] set the coincidence window (T TVAW ) linearly in steps of the Trigger clock (8ns)
-  // Bit[26-24] set the Majority (i.e. Coincidence) level. Nreqest = 1 -> majority = 0)
-  //request ,  majority, TVAW 
-  request |= (TVAW << 20);
-  request |= (majority << 24);
-  ret = CAEN_DGTZ_WriteRegister(VMEhandle, V1725_TRIG_SRCE_EN_MASK , request);
-  std::cout << " global request:  " << std::hex << request << std::dec << std::endl;
-
-  return ret;
-}
-*/
 int configureTrigger()
 {
   char par_name[256];
@@ -1577,136 +1127,7 @@ int configureTrigger()
   }
   return ret;
 }
-// MARIA 2730
-/*
-int set_relative_Threshold()
-{
-	int ch = 0, i = 0;
-	CAEN_DGTZ_ErrorCode ret;
 
-	uint32_t custom_posttrg = 50;
-	int baseline[MAX_CH] = { 0 }, size = 0;
-	int rms[MAX_CH] = { 0 };
-    int samples = 20; // TODO CONFIGURE IN DB
-    int nEvents = 200; // TODO CONFIGURE IN DB
-
-
-	//some custom settings
-	ret = CAEN_DGTZ_SetPostTriggerSize(VMEhandle, custom_posttrg);
-	if (ret) {
-		printf("Threshold calc failed. Error trying to set post trigger!!\n");
-		return -1;
-	}
-
-	CAEN_DGTZ_ClearData(VMEhandle);
-	CAEN_DGTZ_SWStartAcquisition(VMEhandle);
-#ifdef _WIN32
-	Sleep(300);
-#else
-	usleep(300000);
-#endif
-
-    for (int id=0; id<nEvents; id++) // loop in number of events 
-    {
-	  CAEN_DGTZ_SendSWtrigger(VMEhandle);
-
-	  ret = CAEN_DGTZ_ReadData(VMEhandle, CAEN_DGTZ_SLAVE_TERMINATED_READOUT_MBLT, auxBuffer, &BufferSize);
-	  if (ret || BufferSize==0) 
-      {
-        std::cout << " error reading data after software trigger " << std::endl;
-        return -1;
-	  }
-
-	  ret = CAEN_DGTZ_GetEventInfo(VMEhandle, auxBuffer, BufferSize, 0, &EventInfo, &EventPtr); 
-	  if (ret) 
-      {
-        std::cout << " error in get event info " << std::endl;
-        return -1;
-	  }
-	  ret = CAEN_DGTZ_DecodeEvent(VMEhandle, EventPtr, (void**)&Event16);
-	  if (ret) 
-      {
-        std::cout << " error in decode event " << std::endl;
-        return -1;
-	  }
-
-          // MARIA 2730
-	  //for (ch = 0; ch < (int32_t)BoardInfo.Channels; ch++) 
-	  for (ch = 0; ch < (int32_t)runInfo.nChannels; ch++) 
-      {
-        if (v2730_settings.ch_enable[ch]) 
-        {
-		  size = Event16->ChSize[ch];
-          double bsl=0;
-          double auxrms=0;
-
-		  //use some samples to calculate the baseline
-		  for (i = 0; i < samples; i++) 
-          {
-            bsl += (int)(Event16->DataChannel[ch][i]);
-            auxrms += (int)(Event16->DataChannel[ch][i])*(Event16->DataChannel[ch][i]);
-          }
-          auxrms/=samples;
-          auxrms-=bsl*bsl/samples/samples;
-          auxrms=sqrt(auxrms);
-		  baseline[ch] += bsl / samples;
-		  rms[ch] += auxrms;
-        }
-      }
-    } // en loop number  of events
-
-	CAEN_DGTZ_SWStopAcquisition(VMEhandle);
-
-	//reset posttrigger
-	ret = CAEN_DGTZ_SetPostTriggerSize(VMEhandle, v2730_settings.posttrigger); 
-	if (ret) 
-    {
-      std::cout << " error setting posttrigger size " << std::endl;
-      return -1;
-	}
-
-	CAEN_DGTZ_ClearData(VMEhandle);
-
-
-   // set the threshold
-   std::cout << " baseline summary for " << enabledChannels << " channels " << std::endl;
-   // MARIA 2730
-   //for (ch = 0; ch < (int32_t)BoardInfo.Channels; ch++) 
-   for (ch = 0; ch < (int32_t)runInfo.nChannels; ch++) 
-   {
-     if (v2730_settings.ch_enable[ch]) 
-     {
-        baseline[ch] /= nEvents;
-        rms[ch] /= nEvents;
-        int polarity = -1;
-        if (!strcmp(&v2730_settings.pulsePolarity,"+")) polarity = +1;
-    
-        // MARIA TODO: convert from mV to ADC
-        double thr = v2730_settings.ch_threshold[ch];
-        thr=(DWORD)baseline[ch]  + polarity*thr;
-
-        // checks
-        if (thr<0) thr=0; 
-	    //size = (int)pow(2, (double)BoardInfo.ADC_NBits);
-	    size = (int)pow(2, (double)14);  // MARIA 2730 provisional, change to threshold in mV
-        if (thr>(uint32_t)size) thr=size; 
-
-        ret = CAEN_DGTZ_SetChannelTriggerThreshold(VMEhandle, ch, thr);
-        if (ret) 
-        {
-          std::cout << " error setting threshold of channel  "<< ch << std::endl;
-          return -1;
-        }
-        std::cout << " ch " << ch <<  " threshold " << v2730_settings.ch_threshold[ch];
-        std::cout << " baseline " <<  baseline[ch] << " threshold set to " << thr << " rms: " << rms[ch] << std::endl;
-     } // end loop in channels
-   }//end sw trigger event analysis
-
-   return 0;
-}
-*/
-
-// MARIA 2730 new functions
 /*******************
  *******************
  *******************
@@ -1788,7 +1209,6 @@ int allocateEvent()
   // MARIA 2730
   // even if there are a few active channels, it is necesary to 
   // reserve memory to all of them
-  //ptEvent->nChannels = runInfo->nActiveChannels;
   ptEvent->nChannels = runInfo.nChannels;
   ptEvent->nAllocatedSamples = runInfo.nSamples;
 
@@ -1819,7 +1239,6 @@ int allocateEvent()
       exit(1);
     }
   }
-//std::cout << " allocated memory for " << ptEvent->nChannels << " channels of nsamples: " << ptEvent->nAllocatedSamples << std::endl;
 std::cout << " allocated memory for " << ptEvent->nChannels << " channels of nsamples: " << runInfo.nSamples << std::endl;
   return SUCCESS;
 }
