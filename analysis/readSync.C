@@ -9,7 +9,7 @@ int runAnais;
 
 /////////////////// Anod
 TChain * td;
-int NDetAnod = 4; // CHANGE HERE
+int NDetAnod = 10; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
 //std::string AnodBaseName = "./Anod112DM";
@@ -135,11 +135,18 @@ void sync()
 
   int nA = tA->GetEntries();
   int nN = td->GetEntries();
+  
+  cout << " iA: " << iA << " delta: " << delta << " timeA: " << timeA[0] << " timeN: " << timeN[0] << endl;
 
   bool stop = false;
 
   for (iA=1; iA<nA; iA++)
   {
+    cout << " iA: " << iA << " delta: " << delta << " timeA: " << timeA[iA] << " timeN: " << timeN[iA] << endl;
+    cout << "1st if: " << timeA[iA]-epsilon << " > " << delta+timeN[iN]/CORRECTION_FACTOR << endl;
+    cout << "2nd if: " << delta+timeN[iN]/CORRECTION_FACTOR << " > " << timeA[iA]+epsilon << endl;
+    cout << "3rd if: " << stop << endl;
+    
     //while (!stop && fabs(timeA[iA]-deltaIni-timeN[iN]/CORRECTION_FACTOR) > epsilon) 
     while (!stop && timeA[iA]-epsilon>delta+timeN[iN]/CORRECTION_FACTOR)  // timeN should be larger than timeA
     {

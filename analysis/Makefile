@@ -69,7 +69,7 @@ OBJS += TChannelHistograms.o
 OBJS += TAReadRun.o 
 OBJS += TAVisu.o 
 
-all: $(OBJS) wfViewer.exe midas2root.exe midas2Anais.exe wfAverage.exe libAnod.so
+all: $(OBJS) wfViewer.exe midas2Anais.exe wfAverage.exe libAnod.so
 
 lib: libAnod.so
 
@@ -77,9 +77,6 @@ wfViewer.exe: wfViewer.cxx TAEventDict.cxx $(OBJS)
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 wfAverage.exe: wfAverage.cxx TAEventDict.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
-
-midas2root.exe: midas2root.cxx TAEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 midas2Anais.exe: midas2Anais.cxx TAEventDict.cxx $(OBJS) 
