@@ -9,16 +9,18 @@ int runAnais;
 
 /////////////////// Anod
 TChain * td;
-int NDetAnod = 4; // CHANGE HERE
+int NDetAnod = 9; // CHANGE HERE
 int runAnod;
 std::vector<TH1S> * pul;
-//std::string AnodBaseName = "./Anod112DM";
-//std::string AnodBaseName = "/media/storage/data/Anod112DMtest/Anod112DM";
-//std::string AnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
-std::string AnodBaseName = "/media/storage4/Anod112DM/Anod112DM";
-std::string SyncAnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
-std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
-std::string AnaisBaseNameCal = "/media/storage/data/A112DM/A112DMcal";
+// MARIA 161224. Test at LSC
+//std::string AnodBaseName = "/media/storage4/Anod112DM/Anod112DM";
+//std::string SyncAnodBaseName = "/media/storage/data/Anod112DM_analyzed/Anod112DM";
+//std::string AnaisBaseName = "/media/storage/data/A112DM/A112DM";
+//std::string AnaisBaseNameCal = "/media/storage/data/A112DM/A112DMcal";
+std::string AnodBaseName = "/media/storage/DATA/Anod112DMtest/Anod112DM";
+std::string SyncAnodBaseName = "/media/storage/DATA/Anod112DMtest/Anod112DM";
+std::string AnaisBaseName = "/media/storage/DATA/ANAIStest/TEST";
+std::string AnaisBaseNameCal = "/media/storage/DATA/ANAIStest/TEST";
 TCanvas * cPulsesN=0;
 
 
@@ -77,7 +79,8 @@ void drawPulsesAnaSyn(int i)
 TTree * readAnais(int run, std::string anaisbasename="")
 {
   anaisbasename = (run%2 ? AnaisBaseName : AnaisBaseNameCal);
-  if(run>=9000) anaisbasename=AnaisBaseName;
+  //if(run>=9000) anaisbasename=AnaisBaseName; // MARIA 161224
+  if(run>=8000) anaisbasename=AnaisBaseName;
   tA = new TChain("T");
   int maxPartial = 9999;
   for (int parcial=0; parcial<maxPartial; parcial++)
@@ -90,6 +93,7 @@ TTree * readAnais(int run, std::string anaisbasename="")
   }
   tA->SetEstimate(tA->GetEntries());
   std::cout << " to visualize pulses use drawPulses(i++) " << std::endl;
+  tree=tA;
   return tA;
 }
 
@@ -112,7 +116,8 @@ void sync()
   //fstream fq(outfile.c_str(), ios::out);
   TNtuple * tinfo = new TNtuple("tinfo","sync info","AnaisEv:AnodEv:timeAnais:timeAnod:delta:delta_deltaIni"); // for every new daq event, AEvent is the corresponding ANAIS event
 
-  tA->Draw("RT0*50.","","goff");
+  //tA->Draw("RT0*50.","","goff"); // MARIA 161224
+  tA->Draw("RT0*16.","","goff");
   td->Draw("timeNs","","goff");
   Double_t * timeA = tA->GetV1();
   Double_t * timeN = td->GetV1();
@@ -130,8 +135,9 @@ void sync()
 
   //double epsilon = 100; //  ns max different among coincident events (2 ticks)
   //double epsilon = 1000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
-  double epsilon = 8000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
-  //double epsilon = 16000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
+  //double epsilon = 8000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
+  // MARIA 171224. Estaba en 8000, ha fallado con TEST8007. pruebo con 16000
+  double epsilon = 16000; //  acquisition window of Anod = 8000, there should not be differences smaller than this
 
   int nA = tA->GetEntries();
   int nN = td->GetEntries();
@@ -204,6 +210,7 @@ void readSync(int rAna, int rNew, std::string anaisbasename="", std::string anod
   gSystem->Load("libAnod"); //IVAN 19122023
   
   anaisbasename = (rAna%2 ? AnaisBaseName : AnaisBaseNameCal); //IVAN 09012024
+  if(rAna>=8000) anaisbasename=AnaisBaseName; // MARIA 161224
   anodbasename = AnodBaseName;
   runAnais=rAna;
   runAnod=rNew;
@@ -240,7 +247,8 @@ void checkSync()
   TH1F * hN = new TH1F ("hN","",200,0,20e6);
   TH1F * hA = new TH1F ("hA","",200,0,20e6);
   int nA=tA->GetEntries();
-  tA->Draw("RT0*50.","","goff");
+  //tA->Draw("RT0*50.","","goff"); // MARIA 161224
+  tA->Draw("RT0*16.","","goff");
   for (int i=1; i<nA; i++) hA->Fill(tA->GetV1()[i]-tA->GetV1()[i-1]);
   int nsel = td->Draw("timeNs","AEvent>-1","goff");
   for (int i=1; i<nsel; i++) hN->Fill(td->GetV1()[i]-td->GetV1()[i-1]);
