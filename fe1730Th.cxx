@@ -46,7 +46,11 @@ typedef int INT32;
 //#define V1730_MAX_EVENT_SIZE 16000000
 
 // 20 us * 500 S/us * 2 B/S * 16 ch = 320KB 
-#define V1730_MAX_EVENT_SIZE 320000
+//#define V1730_MAX_EVENT_SIZE 320000
+// CARMEN & MARIA: INCREASE TO ALLOW 100000  points 200 us * 500 S/us * 2 B/S * 4 ch = 800KB 
+//#define V1730_MAX_EVENT_SIZE 800000 // this works
+// CARMEN & MARIA: INCREASE TO ALLOW 100000  points 1000 us * 500 S/us * 2 B/S * 4 ch = 4000KB 
+#define V1730_MAX_EVENT_SIZE 4000000 
 
 #define MAXEV_SINGLEREADOUT 1024
 #define MAXEVMIDASINBUFFER 100
@@ -99,7 +103,10 @@ INT max_event_size_frag = 5 * 1024 * 1024;
 
 // dimensions of rb buffer
 //  1 event can be as big as the whole 1730 internal buffer , plus header
-INT rb_max_event_size = 2*5.12*1024*1024*16 + 1024*16; 
+//INT rb_max_event_size = 2*5.12*1024*1024*16 + 1024*16; 
+// CARMEN Y MARIA 020625 test: increment max_event_size to half the buffer
+// to avoid error "event size of ... larger than max_event_size in rb_increment_wp
+INT rb_max_event_size = 1024*1024*512;
 INT rb_event_buffer_size = 1024*1024*1024; // 1GB : MAX ALLOWED
 
 
@@ -408,9 +415,11 @@ INT begin_of_run(INT run_number, char *error)
   if (testVal!=v1730_settings.posttrigger) std::cout << " WARNING : POSTRIGGER  SET TO : " << v1730_settings.posttrigger << " instead of " << testVal << std::endl;
 
   ////////////// NIM LEVELS
-  ret = CAEN_DGTZ_SetIOLevel(VMEhandle, CAEN_DGTZ_IOLevel_NIM);
+  //ret = CAEN_DGTZ_SetIOLevel(VMEhandle, CAEN_DGTZ_IOLevel_NIM);
+  ret = CAEN_DGTZ_SetIOLevel(VMEhandle, CAEN_DGTZ_IOLevel_TTL);
   if (ret != CAEN_DGTZ_Success) 
-    std::cout << " Error Cannot set levels to NIM.  Digitizer error code: " << ret << std::endl;
+    std::cout << " Error Cannot set levels to TTL.  Digitizer error code: " << ret << std::endl;
+  else std::cout << " **************** levels se to TTL. " << std::endl;
 
   //////////////// CHANNEL DYNAMIC RANGE OFFSET AND TRIGGER THRESHOLD
   for(size_t i=0;i<BoardInfo.Channels;++i)
@@ -487,6 +496,7 @@ std::cout << " offset channel " << i << " set to  " << dcoffset << std::endl;
     frontend_exit();
     exit(1);
   }
+  std::cout << " MALLOC DONE, BUFFER SIZE: " << auxBufferSize << std::endl;
 
   // Allocate memory for event data and redout buffer
   ret = CAEN_DGTZ_AllocateEvent(VMEhandle, (void**)&Event16);
@@ -641,8 +651,11 @@ void * readThread(void * arg)
       {
         cm_msg(MERROR,"readThread", "Got wp timeout for thread %d . wp is %d . number of events in rb: %d . Is the ring buffer full?", link , wp, GetNumEventsInRB());
         cm_msg(MERROR,"readThread", "Exiting thread %d with error", link);
-        thread_retval = -1;
-        pthread_exit((void*)&thread_retval);
+        // CARMEN Y MARIA, 020625 TEST, do not exit, just continue
+        //thread_retval = -1;
+        //pthread_exit((void*)&thread_retval);
+        std::cout << " ring buffer time out!! .. .continue " << std::endl;
+        continue;
       }
 
       // Read data and store in circular buffer
@@ -1072,6 +1085,14 @@ int set_relative_Threshold()
 		return -1;
 	}
 
+  // MARIA 060625: set record length to  100
+  std::cout << " changing number of points to 100 to compute baseline " << std::endl;
+  ///////////////// RECORD LENGTH
+  ret = CAEN_DGTZ_SetRecordLength(VMEhandle,100);
+  if (ret != CAEN_DGTZ_Success) 
+    std::cout << " Error Cannot set record length to 100. Digitizer error code: " << ret << std::endl;
+
+
 	CAEN_DGTZ_ClearData(VMEhandle);
 	CAEN_DGTZ_SWStartAcquisition(VMEhandle);
 #ifdef _WIN32
@@ -1088,6 +1109,7 @@ int set_relative_Threshold()
 	  if (ret || BufferSize==0) 
       {
         std::cout << " error reading data after software trigger " << std::endl;
+        std::cout << " ret value: " << ret << " buffer size : " << BufferSize << std::endl;
         return -1;
 	  }
 
@@ -1129,8 +1151,19 @@ int set_relative_Threshold()
 
 	CAEN_DGTZ_SWStopAcquisition(VMEhandle);
 
+  // MARIA 060625: reset record length
+  /////////////////  RECORD LENGTH
+  DWORD testVal;
+  testVal = v1730_settings.recordlength; 
+  ret = CAEN_DGTZ_SetRecordLength(VMEhandle,v1730_settings.recordlength);     // Set the lenght of each waveform (in samples) 
+  if (ret != CAEN_DGTZ_Success) 
+    std::cout << " Error Cannot set record length to " << v1730_settings.recordlength << " Digitizer error code: " << ret << std::endl;
+  ret = CAEN_DGTZ_GetRecordLength(VMEhandle, &v1730_settings.recordlength);
+  if (ret != CAEN_DGTZ_Success) 
+    std::cout << " Error Cannot set record length to " << v1730_settings.recordlength << " Digitizer error code: " << ret << std::endl;
+  if (testVal!=v1730_settings.recordlength) std::cout << " WARNING : RECORD LENGTH SET TO : " << v1730_settings.recordlength;
+
 	//reset posttrigger
-    DWORD testVal;
     testVal = v1730_settings.posttrigger; 
     ret = CAEN_DGTZ_SetPostTriggerSize(VMEhandle,v1730_settings.posttrigger);  // Set the posttrigger for each waveform (in samples) 
     if (ret != CAEN_DGTZ_Success) 
@@ -1139,6 +1172,7 @@ int set_relative_Threshold()
     if (ret != CAEN_DGTZ_Success) 
       std::cout << "set_relative_threshold:  Error Cannot set posttrigger to " << v1730_settings.posttrigger << " Digitizer error code: " << ret << std::endl;
     if (testVal!=v1730_settings.posttrigger) std::cout << " WARNING : POSTRIGGER  SET TO : " << v1730_settings.posttrigger << " instead of " << testVal << std::endl;
+
 
 	CAEN_DGTZ_ClearData(VMEhandle);
 
