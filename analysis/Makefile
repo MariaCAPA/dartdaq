@@ -23,7 +23,7 @@ ifdef ROOTSYS
 
 ROOTCFLAGS   := $(shell root-config --cflags)
 ROOTFEATURES := $(shell root-config --features)
-ROOTGLIBS    := $(shell root-config --glibs) -lThread
+ROOTGLIBS    := $(shell root-config --glibs) -lThread -lSpectrum
 HAVE_ROOT_HTTP := $(findstring http,$(ROOTFEATURES))
 HAVE_ROOT_XML  := $(findstring xml,$(ROOTFEATURES))
 
@@ -69,20 +69,17 @@ OBJS += TDartReadRun.o
 OBJS += TDartVisu.o 
 OBJS += TEventMusic.o
 
-all: $(OBJS) anaMusic.exe wfViewer.exe midas2root.exe wfAverage.exe dartlib.so
+all: $(OBJS) WaveformAnalysis.exe wfViewer.exe wfAverage.exe dartlib.so
 
 lib: dartlib.so
 
-anaMusic.exe: anaMusic.cxx TDartEventDict.cxx $(OBJS) 
+WaveformAnalysis.exe: WaveformAnalysis.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 wfViewer.exe: wfViewer.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 wfAverage.exe: wfAverage.cxx TDartEventDict.cxx $(OBJS) 
-	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
-
-midas2root.exe: midas2root.cxx TDartEventDict.cxx $(OBJS) 
 	$(CXX) -o $@ $(CXXFLAGS) $(INCFLAGS) $^ $(LIBS) $(ROOTGLIBS) -lm -lz -lpthread -lutil
 
 %Dict.o: %Dict.cxx
