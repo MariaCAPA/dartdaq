@@ -101,6 +101,8 @@ INT max_event_size_frag = 5 * 1024 * 1024;
 //  1 event can be as big as the whole 1730 internal buffer , plus header
 INT rb_max_event_size = 2*5.12*1024*1024*16 + 1024*16; 
 INT rb_event_buffer_size = 1024*1024*1024; // 1GB : MAX ALLOWED
+// MARIA 10112023. Test-> crash (not allowed)
+//INT rb_event_buffer_size = 2*1024*1024*1024; // 1GB : MAX ALLOWED
 
 
 // CLOCK. Maria 040723
@@ -634,7 +636,8 @@ void * readThread(void * arg)
 //if (verbose) std::cout << " buffer handle " << rb_handle << " level " << rb_level << std::endl;
       // VERBOSE
       //std::cout << " buffer level " << rb_level << std::endl;
-      if(rb_level > (int)(rb_event_buffer_size*0.75))  // 0.75!!
+      //if(rb_level > (int)(rb_event_buffer_size*0.75))  // 0.75!!
+      if(rb_level > (int)(rb_event_buffer_size*0.60))  // MARIA 231123 0.60!!
       {
         // VERBOSE
         //std::cout << " buffer level " << rb_level << std::endl;
